@@ -1,20 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:weer_bi_dena/screens/home_screen.dart'; // <-- important si tu veux éventuellement utiliser Navigator.push
 
-/// ===========================================================================
-/// 1. DÉCLARATION D’UN WIDGET AVEC ÉTAT : StatefulWidget
-/// ===========================================================================
-///
-/// L’écran de connexion est défini comme un StatefulWidget.
-/// Pourquoi ?
-/// - Un écran de connexion doit gérer :
-///     * la saisie utilisateur,
-///     * l’affichage d’erreurs,
-///     * les états de chargement,
-///     * la validation des champs.
-/// - Ces comportements nécessitent un *état mutable*, manipulé via setState().
-///
-/// Donc même si l’écran est statique pour l’instant, il est pertinent de
-/// préparer sa structure pour les évolutions futures.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -22,106 +8,102 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-/// ===========================================================================
-/// 2. CLASSE D’ÉTAT ASSOCIÉE : _LoginScreenState
-/// ===========================================================================
-///
-/// Cette classe contient :
-/// - les variables d’état (email, password, erreurs, chargement…),
-/// - la logique fonctionnelle,
-/// - la méthode build() qui génère l’interface.
-///
-/// Le préfixe "_" la rend privée au fichier.
 class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  bool isLoading = false;
+
+  void handleLogin() {
+    setState(() => isLoading = true);
+
+    // Simulation d’un traitement (API ou Firebase)
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() => isLoading = false);
+      print("Téléphone : ${phoneController.text}");
+      print("Mot de passe : ${passwordController.text}");
+      // TODO: Navigate to dashboard
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Scaffold structure une page complète Material Design :
-    // - AppBar
-    // - Body
-    // - BottomNavigationBar
-    // - FloatingActionButton
-    // etc.
     return Scaffold(
-
-      // ----------------------------------------------------------------------
-      // 1. BARRE SUPÉRIEURE (AppBar)
-      // ----------------------------------------------------------------------
-      //
-      // L’AppBar permet d’afficher un titre ou des actions (boutons…).
+      backgroundColor: Colors.blue.shade700, // 🔵 Fond bleu
       appBar: AppBar(
-        title: const Text("Connexion à DakarConnect"),
+        backgroundColor: Colors.blue.shade900,
+        title: const Text("Connexion"),
+
+        // 🔙 BOUTON DE RETOUR
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context); // Retour à HomeScreen
+          },
+        ),
       ),
 
-      // ----------------------------------------------------------------------
-      // 2. CONTENU PRINCIPAL (BODY)
-      // ----------------------------------------------------------------------
-      //
-      // Padding ajoute marges internes autour du contenu :
-      // meilleure ergonomie, respect des guidelines UI.
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
-
-        // Column : disposition des widgets en colonne verticale.
+        padding: const EdgeInsets.all(20),
         child: Column(
-          // Centre verticalement l’ensemble des widgets.
           mainAxisAlignment: MainAxisAlignment.center,
-
           children: [
-            // ================================================================
-            // Champ de saisie : Adresse e-mail
-            // ================================================================
-            TextField(
-              // Type spécifique de clavier (email) pour une meilleure UX.
-              keyboardType: TextInputType.emailAddress,
+            // LOGO
+            const Icon(
+              Icons.storefront,
+              size: 90,
+              color: Colors.white,
+            ),
+            const SizedBox(height: 25),
 
-              // decoration permet d’ajouter label, icône, bordure…
-              decoration: const InputDecoration(
-                labelText: 'Adresse e-mail',           // Texte d’aide
-                border: OutlineInputBorder(),          // Bordure standard
-                prefixIcon: Icon(Icons.email),         // Icône à gauche
+            // PHONE FIELD
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: "Numéro de téléphone",
+                labelStyle: const TextStyle(color: Colors.white),
+                prefixIcon: const Icon(Icons.phone, color: Colors.white),
+                enabledBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white70),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white),
+                ),
               ),
             ),
-
-            // Ajout d’un espace vertical de 20 pixels.
             const SizedBox(height: 20),
 
-            // ================================================================
-            // Champ de saisie : Mot de passe
-            // ================================================================
+            // PASSWORD FIELD
             TextField(
-              // Cache le texte saisi pour protéger le mot de passe.
+              controller: passwordController,
               obscureText: true,
-
-              decoration: const InputDecoration(
-                labelText: 'Mot de passe',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),          // Icône cadenas
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: "Mot de passe",
+                labelStyle: const TextStyle(color: Colors.white),
+                prefixIcon: const Icon(Icons.lock, color: Colors.white),
+                enabledBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white70),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white),
+                ),
               ),
             ),
-
             const SizedBox(height: 30),
 
-            // ================================================================
-            // Bouton de connexion
-            // ================================================================
+            // LOGIN BUTTON
             ElevatedButton(
-              // Fonction exécutée lors du clic.
-              // Plus tard, vous y mettrez :
-              //   - validation des champs
-              //   - appel API / Firebase Auth
-              //   - gestion des erreurs
-              onPressed: () {
-                print('Bouton de connexion cliqué !');
-              },
-
-              // Personnalisation du bouton.
+              onPressed: isLoading ? null : handleLogin,
               style: ElevatedButton.styleFrom(
-                // Lui donner toute la largeur disponible
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.blue.shade700,
                 minimumSize: const Size.fromHeight(50),
               ),
-
-              // Texte affiché dans le bouton.
-              child: const Text('Se Connecter'),
+              child: isLoading
+                  ? const CircularProgressIndicator(color: Colors.blue)
+                  : const Text("Se connecter"),
             ),
           ],
         ),
