@@ -54,7 +54,7 @@ class DebtCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                debt.isPaid ? "Payée" : "Impayée",
+                debt.isPaid ? "Remboursée" : "Restante",
                 style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),

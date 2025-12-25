@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -49,7 +50,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         title: const Text("Créer un Compte"),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context), // Retour Home
+          onPressed: () {
+            context.go('/login');
+          } // Retour Home
         ),
       ),
       body: Padding(

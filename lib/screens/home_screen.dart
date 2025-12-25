@@ -1,11 +1,5 @@
-// ============================================================================
-// FICHIER : lib/screens/home_screen.dart
-// ============================================================================
-//
-// Page d’accueil avec background bleu + animations.
-// ============================================================================
-
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +10,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
+
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -53,15 +48,13 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        // ------------------------------------------------------------------
-        // 🔵 BACKGROUND BLEU (DÉGRADÉ)
-        // ------------------------------------------------------------------
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFF0A4DA1), // Bleu foncé
-              Color(0xFF1976D2), // Bleu moyen
-              Color(0xFF63A4FF), // Bleu clair
+              Color(0xFF7B2FF7),
+              Color(0xFF9F44D3),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -77,9 +70,8 @@ class _HomeScreenState extends State<HomeScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // ------------------------------------------------------------------
+
                   // LOGO
-                  // ------------------------------------------------------------------
                   Container(
                     width: 130,
                     height: 130,
@@ -89,15 +81,13 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     child: const Icon(
                       Icons.account_balance_wallet,
-                      color: Color(0xFF0A4DA1),
+                      color: Color(0xFF7B2FF7),
                       size: 70,
                     ),
                   ),
-                  const SizedBox(height: 30),
 
-                  // ------------------------------------------------------------------
-                  // TITRE + DESCRIPTION
-                  // ------------------------------------------------------------------
+                  const SizedBox(height: 20),
+
                   const Text(
                     "Gestion des Dettes",
                     style: TextStyle(
@@ -106,34 +96,33 @@ class _HomeScreenState extends State<HomeScreen>
                       color: Colors.white,
                     ),
                   ),
+
                   const SizedBox(height: 12),
 
                   Text(
                     "Suivez, organisez et gérez facilement les dettes de vos clients.",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 18,
                       color: Colors.white.withOpacity(0.9),
                     ),
                   ),
 
                   const SizedBox(height: 45),
 
-                  // ------------------------------------------------------------------
-                  // BOUTON : SE CONNECTER
-                  // ------------------------------------------------------------------
+                  // 🔐 SE CONNECTER
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
+                    child: OutlinedButton(
                       onPressed: () {
-                        print("Naviguer vers connexion");
+                        context.go('/login');
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.blue.shade900,
+                      style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(55),
+                        side: const BorderSide(color: Colors.white, width: 2),
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
                       child: const Text(
@@ -143,21 +132,22 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 10),
 
-                  // ------------------------------------------------------------------
-                  // BOUTON : CRÉER UN COMPTE
-                  // ------------------------------------------------------------------
+                  // 📝 CRÉER UN COMPTE
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
                       onPressed: () {
-                        print("Naviguer vers création de compte");
+                        context.go('/register');
                       },
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(55),
                         side: const BorderSide(color: Colors.white, width: 2),
                         foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
                       child: const Text(
                         "Créer un compte",

@@ -1,21 +1,53 @@
+// ============================================================================
+// FICHIER : lib/main.dart
+// Version moderne avec Riverpod + GoRouter
+// ============================================================================
+//
+// Point d’entrée de l’application Weer Bi Dena.
+// - Riverpod : gestion d’état globale
+// - GoRouter : navigation déclarative
+// - MaterialApp.router : configuration moderne Flutter
+//
+// ============================================================================
+
 import 'package:flutter/material.dart';
-import 'package:weer_bi_dena/screens/dashboard_screen.dart';
-import 'package:weer_bi_dena/screens/home_screen.dart';
-import 'package:weer_bi_dena/screens/login_screen.dart';
-// On importe notre nouvel écran pour pouvoir l'utiliser
-import 'screens/clients/clients_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// Import de la configuration du routeur
+import 'config/router.dart';
+
 void main() {
-  runApp(const MyApp());
+  // ProviderScope est obligatoire pour utiliser Riverpod
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
-class MyApp extends StatelessWidget {
+
+// ============================================================================
+// MyApp devient un ConsumerWidget
+// ============================================================================
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
+
   @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      // On retire le Scaffold d'ici...
-      // ...et on le remplace par notre HomeScreen !
-      home: HomeScreen(),
-      debugShowCheckedModeBanner: false, // Petite astuce pour enlever la bannière "Debug"
+  Widget build(BuildContext context, WidgetRef ref) {
+
+    // Lecture du provider GoRouter
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+
+      // Configuration du routeur
+      routerConfig: router,
+
+      // Thème global de l'application
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        useMaterial3: true,
+      ),
     );
   }
 }

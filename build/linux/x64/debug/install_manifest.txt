@@ -3,7 +3,9 @@
 /home/klauss/Bureau/weer_bi_dena/weer_bi_dena/build/linux/x64/debug/bundle/lib/libflutter_linux_gtk.so
 /home/klauss/Bureau/weer_bi_dena/weer_bi_dena/build/linux/x64/debug/bundle/data/flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf
 /home/klauss/Bureau/weer_bi_dena/weer_bi_dena/build/linux/x64/debug/bundle/data/flutter_assets/version.json
+/home/klauss/Bureau/weer_bi_dena/weer_bi_dena/build/linux/x64/debug/bundle/data/flutter_assets/NOTICES
 /home/klauss/Bureau/weer_bi_dena/weer_bi_dena/build/linux/x64/debug/bundle/data/flutter_assets/kernel_blob.bin
+/home/klauss/Bureau/weer_bi_dena/weer_bi_dena/build/linux/x64/debug/bundle/data/flutter_assets/AssetManifest.bin.json
 /home/klauss/Bureau/weer_bi_dena/weer_bi_dena/build/linux/x64/debug/bundle/data/flutter_assets/NOTICES.Z
 /home/klauss/Bureau/weer_bi_dena/weer_bi_dena/build/linux/x64/debug/bundle/data/flutter_assets/FontManifest.json
 /home/klauss/Bureau/weer_bi_dena/weer_bi_dena/build/linux/x64/debug/bundle/data/flutter_assets/fonts/MaterialIcons-Regular.otf

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:weer_bi_dena/screens/home_screen.dart'; // <-- important si tu veux éventuellement utiliser Navigator.push
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,103 +9,152 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  bool isLoading = false;
-
-  void handleLogin() {
-    setState(() => isLoading = true);
-
-    // Simulation d’un traitement (API ou Firebase)
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() => isLoading = false);
-      print("Téléphone : ${phoneController.text}");
-      print("Mot de passe : ${passwordController.text}");
-      // TODO: Navigate to dashboard
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue.shade700, // 🔵 Fond bleu
-      appBar: AppBar(
-        backgroundColor: Colors.blue.shade900,
-        title: const Text("Connexion"),
-
-        // 🔙 BOUTON DE RETOUR
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context); // Retour à HomeScreen
-          },
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF7B2FF7),
+              Color(0xFF9F44D3),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
-      ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // LOGO
-            const Icon(
-              Icons.storefront,
-              size: 90,
-              color: Colors.white,
-            ),
-            const SizedBox(height: 25),
-
-            // PHONE FIELD
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: "Numéro de téléphone",
-                labelStyle: const TextStyle(color: Colors.white),
-                prefixIcon: const Icon(Icons.phone, color: Colors.white),
-                enabledBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white70),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
+        child: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "Se connecter",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
 
-            // PASSWORD FIELD
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: "Mot de passe",
-                labelStyle: const TextStyle(color: Colors.white),
-                prefixIcon: const Icon(Icons.lock, color: Colors.white),
-                enabledBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white70),
+              const SizedBox(height: 30),
+
+              // 🧾 CARD BLANCHE
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(25),
                 ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
+                child: Column(
+                  children: [
+                    // EMAIL
+                    TextField(
+                      controller: emailController,
+                      decoration: InputDecoration(
+                        hintText: "yourmail@gmail.com",
+                        prefixIcon: const Icon(Icons.email_outlined),
+
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    // PASSWORD
+                    TextField(
+                      controller: passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: "Password",
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // LOGIN BUTTON
+                    ElevatedButton(
+                      onPressed: () {
+                        context.go('/dashboard');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        backgroundColor: const Color(0xFF7B2FF7),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: const Text(
+                        "Connexion",
+                        style: TextStyle(fontSize: 16, color: Colors.black),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    TextButton(
+                      onPressed: () {
+                        context.go('/forgot-password');
+                      },
+                      child: const Text(
+                        "Mot de passe oublié",
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 30),
 
-            // LOGIN BUTTON
-            ElevatedButton(
-              onPressed: isLoading ? null : handleLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.blue.shade700,
-                minimumSize: const Size.fromHeight(50),
+              const SizedBox(height: 30),
+
+              const Text(
+                "Vous n'avez pas de compte ?",
+                style: TextStyle(color: Colors.white70),
               ),
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.blue)
-                  : const Text("Se connecter"),
-            ),
-          ],
+
+              const SizedBox(height: 15),
+
+
+
+              const SizedBox(height: 25),
+
+              // SIGN UP
+              OutlinedButton(
+                onPressed: () {
+                  context.go('/register');
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+                ),
+                child: const Text(
+                  "Creer un compte",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

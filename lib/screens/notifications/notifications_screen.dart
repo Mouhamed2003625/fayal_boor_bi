@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -32,9 +33,15 @@ class NotificationsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue.shade700,
+        backgroundColor: Colors.lightBlue,
         title: const Text("Notifications"),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: (){
+            context.go('/dashboard');
+          },
+        ),
       ),
       body: notifications.isEmpty
           ? const Center(
@@ -54,7 +61,7 @@ class NotificationsScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.blue.shade50,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade100),
+              border: Border.all(color: Colors.lightBlue),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
