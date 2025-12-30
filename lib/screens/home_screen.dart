@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../repositories/auth_repository.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
 
   late AnimationController _controller;
@@ -46,6 +48,15 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    // 🔹 Écoute l'état de l'utilisateur pour redirection automatique
+    final user = ref.watch(authStateChangesProvider).value;
+    if (user != null) {
+      // Si connecté, rediriger vers l'écran principal (ex: dashboard)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go('/dashboard'); // ou '/home' selon ta route
+      });
+    }
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -60,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen>
             end: Alignment.bottomCenter,
           ),
         ),
-
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
@@ -70,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-
                   // LOGO
                   Container(
                     width: 130,
@@ -85,9 +94,7 @@ class _HomeScreenState extends State<HomeScreen>
                       size: 70,
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   const Text(
                     "Gestion des Dettes",
                     style: TextStyle(
@@ -96,9 +103,7 @@ class _HomeScreenState extends State<HomeScreen>
                       color: Colors.white,
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   Text(
                     "Suivez, organisez et gérez facilement les dettes de vos clients.",
                     textAlign: TextAlign.center,
@@ -107,9 +112,7 @@ class _HomeScreenState extends State<HomeScreen>
                       color: Colors.white.withOpacity(0.9),
                     ),
                   ),
-
                   const SizedBox(height: 45),
-
                   // 🔐 SE CONNECTER
                   SizedBox(
                     width: double.infinity,
@@ -131,9 +134,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 10),
-
                   // 📝 CRÉER UN COMPTE
                   SizedBox(
                     width: double.infinity,
