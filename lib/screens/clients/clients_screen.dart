@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/client_model.dart';
 import '../clients/infos_client_screen.dart';
+import '../../repositories/auth_repository.dart';
 
-class ClientsScreen extends StatelessWidget {
+class ClientsScreen extends ConsumerWidget {
   const ClientsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // ⭐ LISTE DES CLIENTS FACTICES
     final List<Client> clients = [
       Client(
@@ -60,7 +62,7 @@ class ClientsScreen extends StatelessWidget {
       ),
 
       // ================= DRAWER =================
-      drawer: _buildDrawer(context),
+      drawer: _buildDrawer(context, ref),
 
       // ================= BODY =================
       body: Container(
@@ -81,12 +83,6 @@ class ClientsScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 60),
-
-              // -------- HEADER --------
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-
               const SizedBox(height: 20),
 
               // -------- CONTENT --------
@@ -117,8 +113,8 @@ class ClientsScreen extends StatelessWidget {
                           trailing: const Icon(Icons.arrow_forward_ios),
                           onTap: () {
                             context.goNamed(
-                              'infosclients',
-                              extra: client,
+                              'infosclients', // doit correspondre au name de GoRoute
+                              extra: client,   // passe l'objet client
                             );
                           },
                         ),
@@ -144,7 +140,7 @@ class ClientsScreen extends StatelessWidget {
   }
 
   // ================= DRAWER =================
-  Widget _buildDrawer(BuildContext context) {
+  Widget _buildDrawer(BuildContext context, WidgetRef ref) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -194,11 +190,23 @@ class ClientsScreen extends StatelessWidget {
             onTap: () => context.go('/payment'),
           ),
           const Divider(),
+
+          // 🔴 BOUTON DE DÉCONNEXION
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Se déconnecter",
                 style: TextStyle(color: Colors.red)),
-            onTap: () => context.go('/home'),
+            onTap: () async {
+              try {
+                final authRepo = ref.read(authRepositoryProvider);
+                await authRepo.signOut();
+                // GoRouter redirige automatiquement vers login grâce au StreamProvider
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Erreur lors de la déconnexion : $e")),
+                );
+              }
+            },
           ),
         ],
       ),

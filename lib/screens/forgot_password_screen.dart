@@ -1,69 +1,131 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../repositories/auth_repository.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState
+    extends ConsumerState<ForgotPasswordScreen> {
   final TextEditingController emailController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool isLoading = false;
 
-  void sendResetLink() async {
-    if (emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez entrer votre email")),
-      );
-      return;
-    }
+  Future<void> sendResetLink() async {
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
 
-    // 👉 ICI plus tard : appel API
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      await authRepo.sendPasswordResetEmail(
+          email: emailController.text.trim());
 
-    setState(() => isLoading = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Un lien de réinitialisation a été envoyé"),
-      ),
-    );
-
-    context.pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              "Lien de réinitialisation envoyé ! Vérifie ton e-mail."),
+          backgroundColor: Colors.green,
+        ),
+      );
+      emailController.clear();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Erreur : $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Mot de passe oublié")),
+      backgroundColor: Colors.white, // fond blanc agréable
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF7B2FF7),
+        title: const Text("Mot de passe oublié"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.go('/login'); // retour vers login
+          },
+        ),
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const Text(
-              "Entrez votre adresse email pour récupérer votre mot de passe",
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                hintText: "yourmail@gmail.com",
-                prefixIcon: Icon(Icons.email_outlined),
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              const Icon(Icons.lock_reset,
+                  size: 80, color: Color(0xFF7B2FF7)),
+              const SizedBox(height: 20),
+              const Text(
+                "Entrez votre e-mail pour recevoir un lien de réinitialisation",
+                style: TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: isLoading ? null : sendResetLink,
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text("Envoyer"),
-            ),
-          ],
+              const SizedBox(height: 30),
+              TextFormField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: "Email",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) {
+                    return "Veuillez entrer votre e-mail";
+                  }
+                  if (!RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$")
+                      .hasMatch(v)) {
+                    return "E-mail invalide";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: isLoading ? null : sendResetLink,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7B2FF7),
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: isLoading
+                    ? const CircularProgressIndicator(
+                  color: Colors.white,
+                )
+                    : const Text(
+                  "Envoyer le lien",
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 🔹 Bouton retour login
+              TextButton(
+                onPressed: () {
+                  context.go('/login');
+                },
+                child: const Text(
+                  "Retour à la connexion",
+                  style: TextStyle(color: Color(0xFF7B2FF7)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

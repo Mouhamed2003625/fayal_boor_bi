@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../repositories/auth_repository.dart';
-import '../screens/home_screen.dart';
+import '../screens/splash_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/home_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/forgot_password_screen.dart';
@@ -16,19 +17,15 @@ import '../screens/clients/edit_client_screen.dart';
 import '../screens/paiements/add_payment_screen.dart';
 import '../screens/paiements/payments_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
-import 'package:weer_bi_dena/models/client_model.dart';
+import '../models/client_model.dart';
 
-/// -----------------------
-/// GoRouterRefreshStream
-/// -----------------------
-/// Permet à GoRouter de se rafraîchir à chaque changement
-/// du stream Firebase Auth (login / logout)
+/// 🔁 Rafraîchissement du router sur changement Auth
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
-    _sub = stream.asBroadcastStream().listen((_) => notifyListeners());
+    _sub = stream.listen((_) => notifyListeners());
   }
 
-  late final StreamSubscription<dynamic> _sub;
+  late final StreamSubscription _sub;
 
   @override
   void dispose() {
@@ -37,38 +34,69 @@ class GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
-/// -----------------------
-/// Provider du router
-/// -----------------------
 final routerProvider = Provider<GoRouter>((ref) {
-  // 1. État d'auth Firebase
+  // ⚡ Écoute l'état d'auth
   final authAsync = ref.watch(authStateChangesProvider);
   final authStream = ref.read(authRepositoryProvider).authStateChanges;
 
-  // 2. RefreshListenable pour GoRouter
   final refreshListenable = GoRouterRefreshStream(authStream);
   ref.onDispose(refreshListenable.dispose);
 
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/',
     refreshListenable: refreshListenable,
+
     redirect: (context, state) {
-      if (authAsync.isLoading) return null;
-      if (authAsync.hasError) return null;
+      // 🔄 Si on est encore en train de charger l'état Firebase
+      if (authAsync.isLoading) return null; // laisse le SplashScreen s'afficher
 
       final isLoggedIn = authAsync.value != null;
-      final isAtLogin = state.matchedLocation == '/login';
 
-      if (!isLoggedIn && !isAtLogin) return '/login';
-      if (isLoggedIn && isAtLogin) return '/home';
+      // Pages auth
+      final onLoginPage = state.matchedLocation == '/login';
+      final onRegisterPage = state.matchedLocation == '/register';
+      final onForgotPage = state.matchedLocation == '/forgot-password';
+      final onSplash = state.matchedLocation == '/';
+
+      // Cas 1 : utilisateur non connecté → redirige vers login
+      if (!isLoggedIn && !(onLoginPage || onRegisterPage || onForgotPage)) {
+        return '/login';
+      }
+
+      // Cas 2 : utilisateur connecté → redirige vers home si on est sur splash ou login/register
+      if (isLoggedIn && (onSplash || onLoginPage || onRegisterPage)) {
+        return '/home';
+      }
+
+      // Cas 3 : rester sur la page actuelle
       return null;
     },
+
     routes: [
+      // 🔵 Splash
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const SplashScreen(),
+      ),
+
+      // 🔐 Auth
       GoRoute(
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        name: 'forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+
+      // 🏠 App
       GoRoute(
         path: '/home',
         name: 'home',
@@ -79,25 +107,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'dashboard',
         builder: (context, state) => const DashboardScreen(),
       ),
-      GoRoute(
-        path: '/register',
-        name: 'register',
-        builder: (context, state) => const RegisterScreen(),
-      ),
-      GoRoute(
-        path: '/forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
-      ),
-      // Clients
-      GoRoute(
-        path: '/addclient',
-        name: 'addclient',
-        builder: (context, state) => const AddClientScreen(),
-      ),
+
+      // 👥 Clients
       GoRoute(
         path: '/clientScreen',
         name: 'clientScreen',
         builder: (context, state) => const ClientsScreen(),
+      ),
+      GoRoute(
+        path: '/addclient',
+        name: 'addclient',
+        builder: (context, state) => const AddClientScreen(),
       ),
       GoRoute(
         path: '/infosclients',
@@ -115,7 +135,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           return EditClientScreen(client: client);
         },
       ),
-      // Paiements
+
+      // 💰 Paiements
       GoRoute(
         path: '/payment',
         name: 'payment',
@@ -123,13 +144,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/ajoutpayement',
-        name: 'ajoutpayement',
         builder: (context, state) {
           final client = state.extra as Client?;
           return AddPaymentScreen(client: client);
         },
       ),
-      // Notifications
+
+      // 🔔 Notifications
       GoRoute(
         path: '/notification',
         name: 'notification',

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../repositories/auth_repository.dart';
 import '../models/debt_model.dart';
 import '../widgets/debt_card.dart';
-import 'package:fl_chart/fl_chart.dart';
 
-
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   // ---------------- Dummy data ----------------
@@ -39,7 +39,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final debts = _sampleDebts();
     final totalDue =
     debts.where((d) => !d.isPaid).fold<double>(0, (s, d) => s + d.amount);
@@ -70,7 +70,7 @@ class DashboardScreen extends StatelessWidget {
       ),
 
       // ================= DRAWER =================
-      drawer: _buildDrawer(context),
+      drawer: _buildDrawer(context, ref),
 
       // ================= BODY =================
       body: Container(
@@ -195,7 +195,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   // ================= DRAWER =================
-  Widget _buildDrawer(BuildContext context) {
+  Widget _buildDrawer(BuildContext context, WidgetRef ref) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -219,7 +219,7 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  "Boutique Jaaji",
+                  "Boutique du peuple",
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 Text(
@@ -245,11 +245,23 @@ class DashboardScreen extends StatelessWidget {
             onTap: () => context.go('/payment'),
           ),
           const Divider(),
+
+          // 🔴 BOUTON DE DÉCONNEXION
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Se déconnecter",
                 style: TextStyle(color: Colors.red)),
-            onTap: () => context.go('/home'),
+            onTap: () async {
+              try {
+                final authRepo = ref.read(authRepositoryProvider);
+                await authRepo.signOut();
+                // GoRouter redirigera automatiquement vers login
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Erreur lors de la déconnexion : $e")),
+                );
+              }
+            },
           ),
         ],
       ),
@@ -275,11 +287,10 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Bonjour,",
-                  style: TextStyle(color: Colors.white70)),
+              Text("Bonjour,", style: TextStyle(color: Colors.white70)),
               SizedBox(height: 4),
               Text(
-                "Boutique Jaaji",
+                "Boutique du peuple",
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
