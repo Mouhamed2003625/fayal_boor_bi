@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "627448212576",
+    "project_id": "weerbidena-4c20f",
+    "storage_bucket": "weerbidena-4c20f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:627448212576:android:6f09fb6a23473b742fe705",
+        "android_client_info": {
+          "package_name": "com.example.weer_bi_dena"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3JOXW4E4XuMx0j-GEdQRURJzE1WiG7CY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
