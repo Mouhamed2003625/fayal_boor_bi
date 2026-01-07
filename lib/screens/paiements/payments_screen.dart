@@ -14,12 +14,12 @@ class PaymentsScreen extends StatelessWidget {
       Payment(
         clientName: "Ibrahima Ndiaye",
         amount: 4000,
-        date: DateTime.now().subtract(const Duration(hours: 4)),
+        date: DateTime.now().subtract(const Duration(hours: 4)), phoneNumber: '', paymentMethod: '',
       ),
       Payment(
         clientName: "Mariama Diop",
         amount: 7000,
-        date: DateTime.now().subtract(const Duration(days: 1)),
+        date: DateTime.now().subtract(const Duration(days: 1)), phoneNumber: '', paymentMethod: '',
       ),
     ];
 
