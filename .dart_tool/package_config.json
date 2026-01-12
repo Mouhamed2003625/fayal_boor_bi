@@ -158,6 +158,24 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "firebase_storage",
+      "rootUri": "file:///home/klauss/.pub-cache/hosted/pub.dev/firebase_storage-13.0.5",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "firebase_storage_platform_interface",
+      "rootUri": "file:///home/klauss/.pub-cache/hosted/pub.dev/firebase_storage_platform_interface-5.2.16",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "firebase_storage_web",
+      "rootUri": "file:///home/klauss/.pub-cache/hosted/pub.dev/firebase_storage_web-3.11.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
       "name": "fl_chart",
       "rootUri": "file:///home/klauss/.pub-cache/hosted/pub.dev/fl_chart-0.66.2",
       "packageUri": "lib/",

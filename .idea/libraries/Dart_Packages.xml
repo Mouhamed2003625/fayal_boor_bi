@@ -184,6 +184,27 @@
             </list>
           </value>
         </entry>
+        <entry key="firebase_storage">
+          <value>
+            <list>
+              <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_storage-13.0.5/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="firebase_storage_platform_interface">
+          <value>
+            <list>
+              <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_storage_platform_interface-5.2.16/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="firebase_storage_web">
+          <value>
+            <list>
+              <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_storage_web-3.11.1/lib" />
+            </list>
+          </value>
+        </entry>
         <entry key="fl_chart">
           <value>
             <list>
@@ -605,6 +626,9 @@
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_core-4.3.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_core_platform_interface-6.0.2/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_core_web-3.3.1/lib" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_storage-13.0.5/lib" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_storage_platform_interface-5.2.16/lib" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_storage_web-3.11.1/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/fl_chart-0.66.2/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/flutter_lints-6.0.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/flutter_riverpod-3.0.3/lib" />
