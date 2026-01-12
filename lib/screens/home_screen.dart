@@ -63,12 +63,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF7B2FF7),
-              Color(0xFF9F44D3),
-            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,           // Blanc en haut
+              Color(0xFFF0F9FF),     // Bleu très clair
+              Color(0xFFE0F2FE),     // Bleu clair
+              Color(0xFFBAE6FD),     // Bleu ciel doux
+            ],
+            stops: [0.0, 0.3, 0.7, 1.0],
           ),
         ),
         child: FadeTransition(
@@ -80,62 +83,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // LOGO
+                  // LOGO - Mise à jour avec une icône plus adaptée
                   Container(
                     width: 130,
                     height: 130,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.shade100,
+                          blurRadius: 15,
+                          spreadRadius: 3,
+                        ),
+                      ],
                     ),
                     child: const Icon(
-                      Icons.account_balance_wallet,
-                      color: Color(0xFF7B2FF7),
+                      Icons.price_change_sharp,
+                      color: Color(0xFF2563EB),
                       size: 70,
                     ),
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    "Gestion des Dettes",
+                    "Kaay fay",
                     style: TextStyle(
-                      fontSize: 30,
+                      fontSize: 36,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color(0xFF1E40AF), // Bleu foncé
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "Suivez, organisez et gérez facilement les dettes de vos clients.",
+                    "Dites adieu au stress de la dette ! Notre application vous aide à visualiser, "
+                        "gérer et rembourser vos dettes efficacement pour retrouver la sérénité financière.",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.grey[700],
                     ),
                   ),
                   const SizedBox(height: 45),
-                  // 🔐 SE CONNECTER
+
+                  // 🔐 SE CONNECTER - Bouton bleu
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(
+                    child: ElevatedButton(
                       onPressed: () {
                         context.go('/login');
                       },
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(55),
-                        side: const BorderSide(color: Colors.white, width: 2),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB), // Bleu Jobsly
                         foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(55),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: 3,
+                        shadowColor: Colors.blue.shade200,
                       ),
                       child: const Text(
                         "Se connecter",
-                        style: TextStyle(fontSize: 18),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  // 📝 CRÉER UN COMPTE
+                  const SizedBox(height: 15),
+
+                  // 📝 CRÉER UN COMPTE - Bouton outlined bleu
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -144,17 +159,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       },
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(55),
-                        side: const BorderSide(color: Colors.white, width: 2),
-                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFF2563EB), width: 2),
+                        foregroundColor: const Color(0xFF2563EB),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        backgroundColor: Colors.white.withOpacity(0.8),
                       ),
                       child: const Text(
                         "Créer un compte",
-                        style: TextStyle(fontSize: 18),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                       ),
                     ),
+                  ),
+
+                  // Texte informatif supplémentaire
+                  const SizedBox(height: 40),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green.shade600, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Gratuit et sans engagement",
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green.shade600, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Rembourser sans difficulté",
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

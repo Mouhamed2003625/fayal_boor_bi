@@ -23,7 +23,7 @@ class DebtCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formattedDate = DateFormat('dd MMM yyyy, HH:mm').format(debt.date);
+    final formattedDate = DateFormat('dd MMM yyyy, HH:mm').format(debt.dates);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
