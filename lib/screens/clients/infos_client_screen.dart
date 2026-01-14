@@ -15,232 +15,460 @@ class InfosClientScreen extends StatelessWidget {
         .fold(0, (s, d) => s + d.amount);
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-
       // ================= APP BAR =================
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: Colors.white,
+        elevation: 1,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            context.go('/clientScreen');
-          },
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E40AF)),
+          onPressed: () => context.go('/clientScreen'),
         ),
-        title: const Text(
-          "Informations Client",
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          client.name,
+          style: const TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.w600,
+          ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
+            onPressed: () => context.goNamed('editsclients', extra: client),
+          ),
+        ],
       ),
 
       // ================= BODY =================
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF7B2FF7),
-              Color(0xFF9F44D3),
-              Colors.white,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: Stack(
+        children: [
+          // ========== FOND BLEU CLAIR SUR LES CÔTÉS ==========
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: const Color(0xFFE0F2FE), // Bleu clair uniforme
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 60),
 
-              // -------- HEADER --------
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.person,
-                          color: Colors.white, size: 36),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Bonjour,",
-                              style: TextStyle(color: Colors.white70)),
-                          const SizedBox(height: 4),
-                          Text(
-                            client.name,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
-                          ),
+          // ========== PARTIE CENTRALE BLANCHE COURBÉE ==========
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.shade100,
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Column(
+                children: [
+                  // ========== EN-TÊTE DU CLIENT ==========
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF3B82F6),
+                          Color(0xFF60A5FA),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
+                    child: Row(
+                      children: [
+                        // Avatar
+                        Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
 
-              const SizedBox(height: 20),
-
-              // -------- CONTENT --------
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(28),
-                    ),
-                  ),
-                  child: ListView(
-                    children: [
-                      // ---------------- FICHE CLIENT ----------------
-                      Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
+                        // Infos client
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(
+                                client.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  const CircleAvatar(
-                                    radius: 28,
-                                    backgroundColor: Color(0xFF7B2FF7),
-                                    child: Icon(Icons.person,
-                                        color: Colors.white, size: 32),
+                                  const Icon(
+                                    Icons.phone,
+                                    color: Colors.white70,
+                                    size: 18,
                                   ),
-                                  const SizedBox(width: 15),
-                                  Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        client.name,
-                                        style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 5),
-                                      Text(client.phone,
-                                          style: const TextStyle(
-                                              color: Colors.black54)),
-                                    ],
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    client.phone,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                    ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  const Icon(Icons.location_on,
-                                      size: 20, color: Colors.grey),
-                                  const SizedBox(width: 5),
+                                  const Icon(
+                                    Icons.location_on,
+                                    color: Colors.white70,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       client.address.isEmpty
                                           ? "Aucune adresse"
                                           : client.address,
                                       style: const TextStyle(
-                                          color: Colors.black87),
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text("Montant total dû :",
-                                      style: TextStyle(fontSize: 16)),
-                                  Text(
-                                    "${totalDue.toStringAsFixed(0)} FCFA",
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.redAccent,
-                                    ),
-                                  )
-                                ],
-                              ),
-                              const SizedBox(height: 15),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  context.goNamed('editsclients',
-                                      extra: client);
-                                },
-                                icon: const Icon(Icons.edit),
-                                label: const Text(
-                                    "Modifier les informations"),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xE2FFFFFF),
-                                  minimumSize: const Size.fromHeight(45),
-                                ),
-                              ),
                             ],
                           ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
 
-                      const SizedBox(height: 25),
-
-                      // ---------------- DETTES DU CLIENT ----------------
-                      const Text("Dettes du client",
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-
-                      ...client.debts.map((d) {
-                        return Card(
-                          child: ListTile(
-                            leading: Icon(
-                              Icons.money,
-                              color: d.isPaid ? Colors.green : Colors.redAccent,
+                  // ========== KPI DU CLIENT ==========
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        // Total dû
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEE2E2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.account_balance_wallet,
+                                color: Color(0xFFDC2626),
+                                size: 24,
+                              ),
                             ),
-                            title: Text("${d.amount.toStringAsFixed(0)} FCFA"),
-                            subtitle: Text(d.description),
-                            trailing: Text(
-                              d.isPaid ? "Payée" : "Impayée",
+                            const SizedBox(height: 8),
+                            const Text(
+                              "Total dû",
                               style: TextStyle(
-                                color:
-                                d.isPaid ? Colors.green : Colors.redAccent,
+                                color: Color(0xFF64748B),
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "${totalDue.toStringAsFixed(0)} FCFA",
+                              style: const TextStyle(
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: Color(0xFFDC2626),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Nombre de dettes
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.list_alt,
+                                color: Color(0xFFD97706),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              "Dettes",
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "${client.debts.length}",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFD97706),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Dettes payées
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDCFCE7),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF16A34A),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              "Payées",
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "${client.debts.where((d) => d.isPaid).length}",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF16A34A),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ========== LISTE DES DETTES ==========
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 16),
+                            child: Text(
+                              "Détails des dettes",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E293B),
                               ),
                             ),
                           ),
-                        );
-                      }),
-                    ],
+
+                          Expanded(
+                            child: client.debts.isEmpty
+                                ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.account_balance_wallet_outlined,
+                                    size: 60,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    "Aucune dette",
+                                    style: TextStyle(
+                                      color: Color(0xFF94A3B8),
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                                : ListView.builder(
+                              itemCount: client.debts.length,
+                              itemBuilder: (context, index) {
+                                final debt = client.debts[index];
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: Colors.grey.shade200,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: ListTile(
+                                    leading: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: debt.isPaid
+                                            ? const Color(0xFFDCFCE7)
+                                            : const Color(0xFFFEE2E2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        debt.isPaid
+                                            ? Icons.check
+                                            : Icons.access_time,
+                                        color: debt.isPaid
+                                            ? const Color(0xFF16A34A)
+                                            : const Color(0xFFDC2626),
+                                        size: 20,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      "${debt.amount.toStringAsFixed(0)} FCFA",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          debt.description,
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "Échéance: ${debt.dates.day}/${debt.dates.month}/${debt.dates.year}",
+                                          style: TextStyle(
+                                            color: Colors.grey[500],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: debt.isPaid
+                                            ? const Color(0xFFDCFCE7)
+                                            : const Color(0xFFFEE2E2),
+                                        borderRadius:
+                                        BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        debt.isPaid ? "Payée" : "En attente",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: debt.isPaid
+                                              ? const Color(0xFF16A34A)
+                                              : const Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      // Option: Navigation vers détails de la dette
+                                      // context.go('/debt-details', extra: debt);
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
 
-      // ================= FAB =================
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          context.go('/ajoutpayement',
-          extra: client,
-          ); // redirige vers ajout de paiement
-        },
-        icon: const Icon(Icons.payment),
-        label: const Text("Ajouter un paiement"),
-        backgroundColor: const Color(0xF4050505),
+      // ================= BOTTOM BAR =================
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: Colors.grey.shade200, width: 1),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  // Navigation vers historique des paiements
+                  context.go('/payment-history', extra: client);
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: const BorderSide(color: Color(0xFF3B82F6)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.history, color: Color(0xFF3B82F6)),
+                label: const Text(
+                  "Historique",
+                  style: TextStyle(color: Color(0xFF3B82F6)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  context.go('/ajoutpayement', extra: client);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B82F6),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.payment, color: Colors.white),
+                label: const Text(
+                  "Nouveau paiement",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
