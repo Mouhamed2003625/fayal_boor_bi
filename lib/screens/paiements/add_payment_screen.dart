@@ -43,6 +43,17 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
       initialDate: DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF3B82F6),
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (date != null) {
@@ -55,7 +66,10 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
 
     if (paymentDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez sélectionner une date")),
+        const SnackBar(
+          content: Text("Veuillez sélectionner une date"),
+          backgroundColor: Color(0xFFDC2626),
+        ),
       );
       return;
     }
@@ -72,183 +86,445 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
       print("Note : ${noteController.text}");
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Paiement ajouté avec succès")),
+        const SnackBar(
+          content: Text("Paiement ajouté avec succès"),
+          backgroundColor: Color(0xFF16A34A),
+        ),
       );
 
-      context.pop(); // ✅ cohérent avec go_router
+      // Retour à la page précédente après succès
+      context.go('/payment');
     });
+  }
+
+  // Méthode pour retourner à la page précédente
+  void _goBack() {
+    context.go('/payment');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-
       // ================= APP BAR =================
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: Colors.white,
+        elevation: 1,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            context.go('/payment');
-          },
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E40AF)),
+          onPressed: () => context.go('/payment'),// Utilise la même méthode
         ),
         title: const Text(
-          "Ajouter un paiement",
-          style: TextStyle(color: Colors.white),
+          "Nouveau Paiement",
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.w600,
+          ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save, color: Color(0xFF3B82F6)),
+            onPressed: isSaving ? null : savePayment,
+            tooltip: 'Enregistrer',
+          ),
+        ],
       ),
 
       // ================= BODY =================
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF7B2FF7),
-              Color(0xFF9F44D3),
-              Colors.white,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: Stack(
+        children: [
+          // ========== FOND BLEU CLAIR SUR LES CÔTÉS ==========
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: const Color(0xFFE0F2FE), // Bleu clair uniforme
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 60),
 
-              // -------- HEADER --------
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.payment,
-                          color: Colors.white, size: 36),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        widget.client != null
-                            ? "Paiement pour ${widget.client!.name}"
-                            : "Paiement nouveau client",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
+          // ========== PARTIE CENTRALE BLANCHE COURBÉE ==========
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.shade100,
+                  blurRadius: 20,
+                  spreadRadius: 2,
                 ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // -------- FORM CARD --------
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(28)),
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: ListView(
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Column(
+                children: [
+                  // ========== EN-TÊTE ==========
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF3B82F6),
+                          Color(0xFF60A5FA),
+                        ],
+                      ),
+                    ),
+                    child: Row(
                       children: [
-                        TextFormField(
-                          controller: clientNameController,
-                          enabled: widget.client == null,
-                          decoration: const InputDecoration(
-                            labelText: "Nom du client",
-                            prefixIcon: Icon(Icons.person),
-                            border: OutlineInputBorder(),
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
                           ),
-                          validator: (v) {
-                            if (widget.client == null &&
-                                (v == null || v.trim().isEmpty)) {
-                              return "Nom du client requis";
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        TextFormField(
-                          controller: amountController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: "Montant versé (FCFA)",
-                            prefixIcon: Icon(Icons.attach_money),
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (v) =>
-                          v == null || v.isEmpty ? "Entrez un montant" : null,
-                        ),
-                        const SizedBox(height: 20),
-
-                        InkWell(
-                          onTap: pickDate,
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: "Date du paiement",
-                              prefixIcon: Icon(Icons.date_range),
-                              border: OutlineInputBorder(),
-                            ),
-                            child: Text(
-                              paymentDate == null
-                                  ? "Sélectionner une date"
-                                  : "${paymentDate!.day}/${paymentDate!.month}/${paymentDate!.year}",
-                            ),
+                          child: const Icon(
+                            Icons.payment,
+                            color: Colors.white,
+                            size: 32,
                           ),
                         ),
-                        const SizedBox(height: 20),
-
-                        TextFormField(
-                          controller: noteController,
-                          maxLines: 2,
-                          decoration: const InputDecoration(
-                            labelText: "Note (optionnel)",
-                            prefixIcon: Icon(Icons.note_alt),
-                            border: OutlineInputBorder(),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Nouveau Paiement",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.client != null
+                                    ? "Client : ${widget.client!.name}"
+                                    : "Saisissez les informations",
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 30),
-
-                        ElevatedButton(
-                          onPressed: isSaving ? null : savePayment,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF7B2FF7),
-                            minimumSize: const Size.fromHeight(50),
-                          ),
-                          child: isSaving
-                              ? const CircularProgressIndicator(
-                              color: Colors.black87)
-                              : const Text(
-                          "Enregisrer le paiement",
-                          style: TextStyle(fontSize: 18, color: Colors.black),
-                        ),
-
                         ),
                       ],
                     ),
                   ),
-                ),
+
+                  // ========== FORMULAIRE ==========
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Form(
+                        key: _formKey,
+                        child: ListView(
+                          children: [
+                            // Champ Client
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Client",
+                                  style: TextStyle(
+                                    color: Color(0xFF1E293B),
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: TextFormField(
+                                    controller: clientNameController,
+                                    enabled: widget.client == null,
+                                    style: const TextStyle(
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: "Nom du client",
+                                      hintStyle: TextStyle(
+                                        color: Colors.grey.shade500,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.person_outline,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (widget.client == null &&
+                                          (value == null || value.trim().isEmpty)) {
+                                        return "Nom du client requis";
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Montant
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Montant",
+                                  style: TextStyle(
+                                    color: Color(0xFF1E293B),
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: TextFormField(
+                                    controller: amountController,
+                                    keyboardType: TextInputType.number,
+                                    style: const TextStyle(
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: "Montant en FCFA",
+                                      hintStyle: TextStyle(
+                                        color: Colors.grey.shade500,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.attach_money,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return "Montant requis";
+                                      }
+                                      if (double.tryParse(value) == null) {
+                                        return "Montant invalide";
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Date
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Date du paiement",
+                                  style: TextStyle(
+                                    color: Color(0xFF1E293B),
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                InkWell(
+                                  onTap: pickDate,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16),
+                                          child: Icon(
+                                            Icons.date_range_outlined,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            paymentDate == null
+                                                ? "Sélectionner une date"
+                                                : "${paymentDate!.day}/${paymentDate!.month}/${paymentDate!.year}",
+                                            style: TextStyle(
+                                              color: paymentDate == null
+                                                  ? Colors.grey.shade500
+                                                  : const Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                        ),
+                                        if (paymentDate != null)
+                                          IconButton(
+                                            icon: const Icon(Icons.clear,
+                                                size: 18, color: Colors.grey),
+                                            onPressed: () {
+                                              setState(() => paymentDate = null);
+                                            },
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Note (optionnel)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Note (optionnel)",
+                                  style: TextStyle(
+                                    color: Color(0xFF1E293B),
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: TextFormField(
+                                    controller: noteController,
+                                    maxLines: 3,
+                                    style: const TextStyle(
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: "Ajouter une note...",
+                                      hintStyle: TextStyle(
+                                        color: Colors.grey.shade500,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.all(16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Bouton d'enregistrement
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: isSaving ? null : savePayment,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF3B82F6),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 18),
+                                  elevation: 2,
+                                ),
+                                child: isSaving
+                                    ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                    : const Row(
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.save, size: 20),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      "Enregistrer le paiement",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Bouton d'annulation - MÊME DESTINATION QUE LE BOUTON RETOUR
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: isSaving ? null : _goBack, // Utilise la même méthode
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF64748B),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 18),
+                                  side: BorderSide(
+                                    color: Colors.grey.shade300,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Text(
+                                  "Annuler",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

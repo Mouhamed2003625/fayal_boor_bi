@@ -13,14 +13,12 @@ class _AddClientScreenState extends State<AddClientScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
-
   final TextEditingController amountDueController = TextEditingController();
   final TextEditingController productController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController amountPaidController = TextEditingController();
 
   DateTime? paymentDate;
-
   final _formKey = GlobalKey<FormState>();
   bool isSaving = false;
 
@@ -30,6 +28,17 @@ class _AddClientScreenState extends State<AddClientScreen> {
       initialDate: DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF3B82F6),
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (date != null) {
@@ -56,7 +65,10 @@ class _AddClientScreenState extends State<AddClientScreen> {
       print("Date versement : $paymentDate");
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Client enregistré avec succès")),
+        const SnackBar(
+          content: Text("Client enregistré avec succès"),
+          backgroundColor: Color(0xFF16A34A),
+        ),
       );
 
       context.go('/clientScreen');
@@ -66,202 +78,430 @@ class _AddClientScreenState extends State<AddClientScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ================= BODY AVEC FOND GRADIENT =================
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF7B2FF7),
-              Color(0xFF9F44D3),
-              Colors.white,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      // ================= APP BAR =================
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E40AF)),
+          onPressed: () => context.go('/clientScreen'),
+        ),
+        title: const Text(
+          "Nouveau Client",
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.w600,
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // ================= APP BAR PERSONNALISÉ =================
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () {
-                        context.go('/clientScreen');
-                      },
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      "Ajouter un Client",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save, color: Color(0xFF3B82F6)),
+            onPressed: isSaving ? null : saveClient,
+            tooltip: 'Enregistrer',
+          ),
+        ],
+      ),
+
+      // ================= BODY =================
+      body: Stack(
+        children: [
+          // ========== FOND BLEU CLAIR SUR LES CÔTÉS ==========
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: const Color(0xFFE0F2FE), // Bleu clair uniforme
+          ),
+
+          // ========== PARTIE CENTRALE BLANCHE COURBÉE ==========
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.shade100,
+                  blurRadius: 20,
+                  spreadRadius: 2,
                 ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ================= FORMULAIRE =================
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(28),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Column(
+                children: [
+                  // ========== EN-TÊTE ==========
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF3B82F6),
+                          Color(0xFF60A5FA),
+                        ],
+                      ),
                     ),
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: ListView(
+                    child: Row(
                       children: [
-                        const SizedBox(height: 10),
-                        const Icon(Icons.person_add_alt_1,
-                            size: 80, color: Color(0xFF7B2FF7)),
-                        const SizedBox(height: 20),
-
-                        // NOM
-                        TextFormField(
-                          controller: nameController,
-                          decoration: const InputDecoration(
-                            labelText: "Nom complet du client",
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.person),
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
                           ),
-                          validator: (v) =>
-                          v == null || v.isEmpty ? "Entrez le nom du client" : null,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // TELEPHONE
-                        TextFormField(
-                          controller: phoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: "Numéro de téléphone",
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.phone),
-                          ),
-                          validator: (v) =>
-                          v == null || v.isEmpty ? "Entrez un numéro valide" : null,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // ADRESSE
-                        TextFormField(
-                          controller: addressController,
-                          decoration: const InputDecoration(
-                            labelText: "Adresse du client",
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.location_on),
+                          child: const Icon(
+                            Icons.person_add_alt_1,
+                            color: Colors.white,
+                            size: 32,
                           ),
                         ),
-                        const SizedBox(height: 16),
-
-                        // PRODUIT
-                        TextFormField(
-                          controller: productController,
-                          decoration: const InputDecoration(
-                            labelText: "Nom du produit",
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.shopping_cart),
-                          ),
-                          validator: (v) =>
-                          v == null || v.isEmpty ? "Entrez le nom du produit" : null,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // QUANTITE
-                        TextFormField(
-                          controller: quantityController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: "Quantité",
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.numbers),
-                          ),
-                          validator: (v) =>
-                          v == null || v.isEmpty ? "Entrez une quantité" : null,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // MONTANT A PAYER
-                        TextFormField(
-                          controller: amountDueController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: "Montant à payer (FCFA)",
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.attach_money),
-                          ),
-                          validator: (v) =>
-                          v == null || v.isEmpty ? "Entrez un montant" : null,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // MONTANT VERSE
-                        TextFormField(
-                          controller: amountPaidController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: "Montant versé (FCFA)",
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.payments),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // DATE DE VERSEMENT
-                        InkWell(
-                          onTap: pickDate,
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: "Date de versement",
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.date_range),
-                            ),
-                            child: Text(
-                              paymentDate == null
-                                  ? "Sélectionner une date"
-                                  : "${paymentDate!.day}/${paymentDate!.month}/${paymentDate!.year}",
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // BOUTON ENREGISTRER
-                        ElevatedButton(
-                          onPressed: isSaving ? null : saveClient,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF7B2FF7),
-                            minimumSize: const Size.fromHeight(50),
-                          ),
-                          child: isSaving
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text(
-                            "Enregistrer le client",
-                            style: TextStyle(fontSize: 16, color: Colors.white),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Nouveau Client",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                "Ajoutez les informations du client",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+
+                  // ========== FORMULAIRE ==========
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Form(
+                        key: _formKey,
+                        child: ListView(
+                          children: [
+                            // Champ Nom
+                            _buildFormField(
+                              label: "Nom complet du client",
+                              controller: nameController,
+                              icon: Icons.person_outline,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return "Nom du client requis";
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Téléphone
+                            _buildFormField(
+                              label: "Numéro de téléphone",
+                              controller: phoneController,
+                              icon: Icons.phone_outlined,
+                              keyboardType: TextInputType.phone,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return "Numéro de téléphone requis";
+                                }
+                                if (value.length < 9) {
+                                  return "Numéro invalide";
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Adresse
+                            _buildFormField(
+                              label: "Adresse du client (optionnel)",
+                              controller: addressController,
+                              icon: Icons.location_on_outlined,
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Produit
+                            _buildFormField(
+                              label: "Nom du produit",
+                              controller: productController,
+                              icon: Icons.shopping_cart_outlined,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return "Nom du produit requis";
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Quantité
+                            _buildFormField(
+                              label: "Quantité",
+                              controller: quantityController,
+                              icon: Icons.numbers_outlined,
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return "Quantité requise";
+                                }
+                                if (int.tryParse(value) == null) {
+                                  return "Quantité invalide";
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Montant à payer
+                            _buildFormField(
+                              label: "Montant à payer (FCFA)",
+                              controller: amountDueController,
+                              icon: Icons.attach_money,
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return "Montant requis";
+                                }
+                                if (double.tryParse(value) == null) {
+                                  return "Montant invalide";
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Montant versé
+                            _buildFormField(
+                              label: "Montant versé (FCFA) - optionnel",
+                              controller: amountPaidController,
+                              icon: Icons.payments_outlined,
+                              keyboardType: TextInputType.number,
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Champ Date de versement
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Date de versement",
+                                  style: TextStyle(
+                                    color: Color(0xFF1E293B),
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                InkWell(
+                                  onTap: pickDate,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16),
+                                          child: Icon(
+                                            Icons.date_range_outlined,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            paymentDate == null
+                                                ? "Sélectionner une date"
+                                                : "${paymentDate!.day}/${paymentDate!.month}/${paymentDate!.year}",
+                                            style: TextStyle(
+                                              color: paymentDate == null
+                                                  ? Colors.grey.shade500
+                                                  : const Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                        ),
+                                        if (paymentDate != null)
+                                          IconButton(
+                                            icon: const Icon(Icons.clear,
+                                                size: 18, color: Colors.grey),
+                                            onPressed: () {
+                                              setState(() => paymentDate = null);
+                                            },
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Bouton d'enregistrement
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: isSaving ? null : saveClient,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF3B82F6),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  elevation: 2,
+                                ),
+                                child: isSaving
+                                    ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                    : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.save, size: 20),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      "Enregistrer le client",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Bouton d'annulation
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: isSaving ? null : () => context.go('/clientScreen'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF64748B),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  side: BorderSide(
+                                    color: Colors.grey.shade300,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Text(
+                                  "Annuler",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ========== WIDGET DE CHAMP DE FORMULAIRE RÉUTILISABLE ==========
+  Widget _buildFormField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
           ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
+          ),
+          child: TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            style: const TextStyle(
+              color: Color(0xFF1E293B),
+            ),
+            decoration: InputDecoration(
+              hintText: label.contains("optionnel")
+                  ? label.replaceAll(" - optionnel", "")
+                  : label,
+              hintStyle: TextStyle(
+                color: Colors.grey.shade500,
+              ),
+              prefixIcon: Icon(
+                icon,
+                color: Colors.grey.shade500,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            validator: validator,
+          ),
+        ),
+      ],
     );
   }
 }
