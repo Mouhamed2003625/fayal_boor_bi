@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../models/client_model.dart';
+
+import '../../models/client_model.dart';
 
 class EditClientScreen extends StatefulWidget {
   final Client client;

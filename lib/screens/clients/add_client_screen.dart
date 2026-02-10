@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AddClientScreen extends StatefulWidget {
   const AddClientScreen({super.key});
@@ -21,6 +23,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
   DateTime? paymentDate;
   final _formKey = GlobalKey<FormState>();
   bool isSaving = false;
+  String? errorMessage;
 
   Future<void> pickDate() async {
     final DateTime? date = await showDatePicker(
@@ -46,33 +49,92 @@ class _AddClientScreenState extends State<AddClientScreen> {
     }
   }
 
-  void saveClient() {
+  Future<void> saveClient() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => isSaving = true);
+    setState(() {
+      isSaving = true;
+      errorMessage = null;
+    });
 
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() => isSaving = false);
+    try {
+      // Préparer les données pour l'API
+      final Map<String, dynamic> clientData = {
+        'name': nameController.text.trim(),
+        'phone': phoneController.text.trim(),
+        'address': addressController.text.trim(),
+        'product': productController.text.trim(),
+        'quantity': quantityController.text.trim(),
+        'amountDue': amountDueController.text.isNotEmpty
+            ? double.parse(amountDueController.text)
+            : null,
+        'amountPaid': amountPaidController.text.isNotEmpty
+            ? double.parse(amountPaidController.text)
+            : null,
+        'paymentDate': paymentDate?.toIso8601String(),
+      };
 
-      print("====== NOUVEAU CLIENT ======");
-      print("Nom : ${nameController.text}");
-      print("Téléphone : ${phoneController.text}");
-      print("Adresse : ${addressController.text}");
-      print("Produit : ${productController.text}");
-      print("Montant à payer : ${amountDueController.text}");
-      print("Quantité : ${quantityController.text}");
-      print("Montant versé : ${amountPaidController.text}");
-      print("Date versement : $paymentDate");
+      // Supprimer les champs null
+      clientData.removeWhere((key, value) => value == null || (value is String && value.isEmpty));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Client enregistré avec succès"),
-          backgroundColor: Color(0xFF16A34A),
-        ),
+      // Appeler l'API
+      final response = await http.post(
+        Uri.parse('http://localhost/fayal_boor_bi/clients/client_create.php'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(clientData),
       );
 
-      context.go('/clientScreen');
-    });
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['ok'] == true) {
+        // Succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['message'] ?? 'Client enregistré avec succès'),
+            backgroundColor: const Color(0xFF16A34A),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Attendre un peu avant la navigation pour voir le message
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Retourner à l'écran des clients
+        if (context.mounted) {
+          context.go('/clientScreen');
+        }
+      } else {
+        // Erreur de l'API
+        setState(() {
+          errorMessage = responseData['message'] ?? 'Erreur inconnue';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['message'] ?? 'Erreur lors de l\'enregistrement'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } on FormatException catch (e) {
+      setState(() {
+        errorMessage = 'Erreur de format: ${e.message}';
+      });
+    } on http.ClientException catch (e) {
+      setState(() {
+        errorMessage = 'Erreur de connexion: ${e.message}';
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Erreur inattendue: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => isSaving = false);
+      }
+    }
   }
 
   @override
@@ -109,7 +171,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
           Container(
             width: double.infinity,
             height: double.infinity,
-            color: const Color(0xFFE0F2FE), // Bleu clair uniforme
+            color: const Color(0xFFE0F2FE),
           ),
 
           // ========== PARTIE CENTRALE BLANCHE COURBÉE ==========
@@ -195,6 +257,30 @@ class _AddClientScreenState extends State<AddClientScreen> {
                         key: _formKey,
                         child: ListView(
                           children: [
+                            // Afficher les erreurs
+                            if (errorMessage != null)
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.red.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        errorMessage!,
+                                        style: const TextStyle(color: Colors.red),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
                             // Champ Nom
                             _buildFormField(
                               label: "Nom complet du client",
@@ -221,7 +307,10 @@ class _AddClientScreenState extends State<AddClientScreen> {
                                   return "Numéro de téléphone requis";
                                 }
                                 if (value.length < 9) {
-                                  return "Numéro invalide";
+                                  return "Numéro invalide (minimum 9 chiffres)";
+                                }
+                                if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                                  return "Numéro invalide (chiffres seulement)";
                                 }
                                 return null;
                               },
@@ -264,7 +353,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
                                   return "Quantité requise";
                                 }
                                 if (int.tryParse(value) == null) {
-                                  return "Quantité invalide";
+                                  return "Quantité invalide (nombre entier)";
                                 }
                                 return null;
                               },
@@ -285,6 +374,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
                                 if (double.tryParse(value) == null) {
                                   return "Montant invalide";
                                 }
+                                if (double.parse(value) <= 0) {
+                                  return "Montant doit être supérieur à 0";
+                                }
                                 return null;
                               },
                             ),
@@ -297,6 +389,17 @@ class _AddClientScreenState extends State<AddClientScreen> {
                               controller: amountPaidController,
                               icon: Icons.payments_outlined,
                               keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.isNotEmpty) {
+                                  if (double.tryParse(value) == null) {
+                                    return "Montant invalide";
+                                  }
+                                  if (double.parse(value) < 0) {
+                                    return "Montant ne peut pas être négatif";
+                                  }
+                                }
+                                return null;
+                              },
                             ),
 
                             const SizedBox(height: 20),
@@ -306,7 +409,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  "Date de versement",
+                                  "Date de versement (optionnel)",
                                   style: TextStyle(
                                     color: Color(0xFF1E293B),
                                     fontWeight: FontWeight.w500,

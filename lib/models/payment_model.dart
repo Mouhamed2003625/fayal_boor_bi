@@ -1,59 +1,108 @@
 // ============================================================================
-// FICHIER : lib/models/payment_model.dart
-// ============================================================================
-// Modèle "Payment" représentant un paiement effectué par un client.
-//
-// Attributs :
-//  - clientName      : Nom du client
-//  - phoneNumber     : Contact du client
-//  - amount          : Montant payé
-//  - paymentMethod   : Moyen de paiement (cash, mobile money, carte, etc.)
-//  - date            : Date du paiement
-//
-// Ce modèle facilite :
-//  - la validation des données,
-//  - la sérialisation (ex: JSON / Firebase),
-//  - la structuration propre du code.
+//  MODÈLE : Payment (Versement lié à une dette)
 // ============================================================================
 
 class Payment {
-  final String clientName;
-  final String phoneNumber;
+  /// Identifiant unique du paiement
+  final int id;
+
+  /// Clé étrangère vers la dette
+  final int debtId;
+
+  /// Montant payé
   final double amount;
-  final String paymentMethod;
-  final DateTime date;
+
+  /// Date du paiement
+  final DateTime paidAt;
+
+  /// Méthode de paiement (cash, mobile money, virement…)
+  final String? method;
+
+  /// Référence de paiement (num transaction, reçu…)
+  final String? reference;
+
+  /// Notes supplémentaires
+  final String? notes;
+
+  /// Utilisateur ayant enregistré le paiement
+  final String? userId;
 
   Payment({
-    required this.clientName,
-    required this.phoneNumber,
+    required this.id,
+    required this.debtId,
     required this.amount,
-    required this.paymentMethod,
-    required this.date,
+    required this.paidAt,
+    this.method,
+    this.reference,
+    this.notes,
+    this.userId,
   });
 
   // --------------------------------------------------------------------------
-  // Conversion en Map (ex: stockage Firebase / SQLite)
+  // Factory : depuis JSON backend
+  // --------------------------------------------------------------------------
+  factory Payment.fromJson(Map<String, dynamic> json) {
+    return Payment(
+      id: int.tryParse('${json['id']}') ?? 0,
+      debtId: int.tryParse('${json['debtId'] ?? json['debt_id']}') ?? 0,
+      amount: json['amount'] is num
+          ? (json['amount'] as num).toDouble()
+          : double.tryParse(json['amount']?.toString() ?? '') ?? 0.0,
+      paidAt: json['paidAt'] != null
+          ? DateTime.tryParse(json['paidAt'].toString()) ?? DateTime.now()
+          : (json['paid_at'] != null
+          ? DateTime.tryParse(json['paid_at'].toString()) ?? DateTime.now()
+          : DateTime.now()),
+      method: (json['method'] ?? json['payment_method'])?.toString(),
+      reference: (json['reference'] ?? json['payment_reference'])?.toString(),
+      notes: json['notes']?.toString(),
+      userId: (json['userId'] ?? json['user_id'])?.toString(),
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Conversion vers Map (POST backend)
   // --------------------------------------------------------------------------
   Map<String, dynamic> toMap() {
     return {
-      "clientName": clientName,
-      "phoneNumber": phoneNumber,
-      "amount": amount,
-      "paymentMethod": paymentMethod,
-      "date": date.toIso8601String(),
+      'id': id,
+      'debtId': debtId,
+      'amount': amount,
+      'paidAt': paidAt.toIso8601String(),
+      'method': method,
+      'reference': reference,
+      'notes': notes,
+      'userId': userId,
     };
   }
 
   // --------------------------------------------------------------------------
-  // Conversion depuis Map
+  // copyWith
   // --------------------------------------------------------------------------
-  factory Payment.fromMap(Map<String, dynamic> map) {
+  Payment copyWith({
+    int? id,
+    int? debtId,
+    double? amount,
+    DateTime? paidAt,
+    String? method,
+    String? reference,
+    String? notes,
+    String? userId,
+  }) {
     return Payment(
-      clientName: map["clientName"],
-      phoneNumber: map["phoneNumber"],
-      amount: (map["amount"] as num).toDouble(),
-      paymentMethod: map["paymentMethod"],
-      date: DateTime.parse(map["date"]),
+      id: id ?? this.id,
+      debtId: debtId ?? this.debtId,
+      amount: amount ?? this.amount,
+      paidAt: paidAt ?? this.paidAt,
+      method: method ?? this.method,
+      reference: reference ?? this.reference,
+      notes: notes ?? this.notes,
+      userId: userId ?? this.userId,
     );
+  }
+
+  @override
+  String toString() {
+    return 'Payment{id: $id, debtId: $debtId, amount: $amount, paidAt: $paidAt}';
   }
 }

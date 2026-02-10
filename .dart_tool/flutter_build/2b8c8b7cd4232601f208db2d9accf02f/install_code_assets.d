@@ -1,0 +1,1 @@
+ /home/klauss/Bureau/weer_bi_dena/weer_bi_dena/.dart_tool/flutter_build/2b8c8b7cd4232601f208db2d9accf02f/native_assets.json: 

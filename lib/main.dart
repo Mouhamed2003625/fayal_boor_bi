@@ -11,6 +11,7 @@
 //
 // ============================================================================
 
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -57,7 +58,7 @@ class MyApp extends ConsumerWidget {
 
       // Thème global
       theme: ThemeData(
-        primarySwatch: Colors.indigo,
+        primarySwatch: Colors.lightBlue,
         useMaterial3: true,
       ),
     );
