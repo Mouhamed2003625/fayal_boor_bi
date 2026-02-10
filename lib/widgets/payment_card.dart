@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/payment_model.dart';
+import '../../models/payment_model.dart';
 import 'package:intl/intl.dart';
 
 class PaymentCard extends StatelessWidget {
@@ -9,14 +9,20 @@ class PaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formattedDate = DateFormat("dd MMM yyyy HH:mm").format(payment.date);
+    final date = DateFormat('dd MMM yyyy HH:mm').format(payment.paidAt);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
       child: ListTile(
-        leading: const Icon(Icons.payment, color: Colors.green, size: 30),
-        title: Text("${payment.clientName}"),
-        subtitle: Text("Payé le : $formattedDate"),
+        leading: const Icon(Icons.payment, color: Colors.green),
+        title: Text("Dette #${payment.debtId}"),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Payé le : $date"),
+            if (payment.method != null)
+              Text("Méthode : ${payment.method}"),
+          ],
+        ),
         trailing: Text(
           "${payment.amount.toStringAsFixed(0)} FCFA",
           style: const TextStyle(

@@ -44,48 +44,57 @@ class ApiConfig {
   // Le but est d’indiquer clairement dans votre cours **où mettre l’URL**,
   // et pourquoi cette différence existe entre chaque plateforme.
   //
-  static const String baseUrl = 'http://localhost/fayal_boor_bi';
+  static const String baseUrl = 'http://127.0.0.1/fayal_boor_bi';
 
   // ==========================================================================
   // 2. ENDPOINTS API : construction d’URLs à partir de baseUrl
   // ==========================================================================
   //
-  // Chaque méthode retourne l’URL complète vers un fichier PHP spécifique.
-  //
-  // BUT pédagogique : éviter de dupliquer les chemins partout dans le code.
-  // Ainsi, lorsqu’on changera l’emplacement du backend (ou si on passe sur un
-  // serveur en ligne), une seule ligne sera modifiée → baseUrl.
-  //
 
-  /// Endpoint pour créer un incident.
-  /// Côté serveur : fichier PHP "incident_create.php".
-  ///
-  /// Utilisation côté Flutter :
-  ///    final url = ApiConfig.createIncidentUrl();
-  ///
-  static String createDebtUrl() => '$baseUrl/debt_create.php';
+           /// DETTES ///
 
-  /// Endpoint pour lister tous les incidents (JSON).
-  /// Côté serveur : fichier "incident_list.php".
-  ///
-  /// Exemple pédagogique :
-  ///   - Flutter fait un GET sur cette URL,
-  ///   - PHP récupère les données MySQL,
-  ///   - renvoie un JSON,
-  ///   - Flutter convertit ce JSON en liste d'objets Incident.
-  ///
-  static String listDebtUrl()   => '$baseUrl/debt_list.php';
+  /// Créer une dette
+  static String createDebtUrl() => '$baseUrl/debts/debt_create.php';
 
-  /// Endpoint pour supprimer un incident.
-  /// Côté serveur : fichier "incident_delete.php".
-  ///
-  /// Exemple pédagogique :
-  ///   - Flutter envoie un POST avec un ID,
-  ///   - PHP supprime l’entrée MySQL correspondante,
-  ///   - renvoie un message de confirmation.
-  ///
-  static String deleteDebtUrl()  => '$baseUrl/debt_delete.php';
+  /// Lister toutes les dettes (optionnel : filtrage par userId ou clientId)
+  static String listDebtUrl() => '$baseUrl/debts/debt_list.php';
+  /// Mettre à jour une dette
+  /// → l’ID est envoyé dans le body (POST) plutôt que dans l’URL
+  static String updateDebtUrl() => '$baseUrl/debts/debt_update.php';
+
+  /// Supprimer une dette
+  static String deleteDebtUrl(int id) => '$baseUrl/debts/debt_delete.php?id=$id';
+
+  /// Marquer une dette comme payée
+  static String markDebtAsPaidUrl() => '$baseUrl/debts/debt_pay.php';
 
 
-  static String updateDebtUrl()   => '$baseUrl/debt_update.php';
+            /// CLIENTS ///
+
+
+  static String listClientUrl()   => '$baseUrl/clients/list_client.php';
+
+  static String listClientByIdUrl(String id)   => '$baseUrl/clients/list_client_byId.php';
+
+  static String createClientUrl()   => '$baseUrl/clients/create_clients.php';
+
+  static String updateClientUrl()   => '$baseUrl/clients/update_client.php';
+
+  static String deleteClientUrl()   => '$baseUrl/clients/delete_client.php';
+
+
+
+
+  /// PAYMENTS ///
+  static String createPaymentUrl()  => '$baseUrl/payments/create_payment.php';
+
+  static String listPaymentUrl(int id)   => '$baseUrl/payments/list_payment.php';
+
+  static String deletePaymentUrl() => '$baseUrl/payments/delete_payment.php';
+
+  static String updatePaymentUrl() => '$baseUrl/payments/update_payment.php';
+
+
 }
+
+

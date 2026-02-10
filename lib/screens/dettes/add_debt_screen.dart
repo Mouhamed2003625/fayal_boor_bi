@@ -1,7 +1,32 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../services/debt_repository_mysql.dart';
+import 'package:http/http.dart' as http;
+
+import '../../providers/debt_provider.dart';
+import '../../models/client_model.dart';
+import '../../services/api_config.dart';
+
+/// ⚠️ À adapter selon Flutter Web / Mobile
+
+// -----------------------------------------------------------------------------
+// Provider clients (JSON = LIST DIRECTE)
+// -----------------------------------------------------------------------------
+final clientsProvider = FutureProvider<List<Client>>((ref) async {
+  final response = await http.get(
+    Uri.parse(ApiConfig.listClientUrl()),
+    headers: {'Accept': 'application/json'},
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Erreur HTTP ${response.statusCode}');
+  }
+
+  final List data = json.decode(response.body);
+  return data.map((e) => Client.fromJson(e)).toList();
+});
 
 class AddDebtScreen extends ConsumerStatefulWidget {
   const AddDebtScreen({super.key});
@@ -12,72 +37,79 @@ class AddDebtScreen extends ConsumerStatefulWidget {
 
 class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _clientCtrl = TextEditingController();
-  final TextEditingController _phoneCtrl = TextEditingController();
-  final TextEditingController _amountCtrl = TextEditingController();
-  final TextEditingController _descCtrl = TextEditingController();
 
-  DateTime _selectedDate = DateTime.now();
-  bool _isPaid = false;
+  final _amountCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  final _paymentMethodCtrl = TextEditingController();
+  final _paymentReferenceCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+
+  Client? _selectedClient;
+  DateTime _dueDate = DateTime.now().add(const Duration(days: 30));
+  DateTime? _paymentDate;
+
   bool _isLoading = false;
+  bool _showClientList = false;
 
-  Future<void> _pickDate() async {
+  Future<void> _pickDueDate() async {
     final date = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
+      initialDate: _dueDate,
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
-    if (date != null) setState(() => _selectedDate = date);
+    if (date != null) setState(() => _dueDate = date);
+  }
+
+  Future<void> _pickPaymentDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (date != null) setState(() => _paymentDate = date);
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedClient == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez sélectionner un client')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      final repo = ref.read(debtRepositoryMySqlProvider);
+      final repo = ref.read(debtRepositoryProvider);
 
-      // Conversion sûre du montant
-      final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0.0;
-      if (amount <= 0) throw 'Montant invalide';
+      final amount = double.parse(_amountCtrl.text.trim());
 
-      // Appel backend
       await repo.addDebt(
-        clientName: _clientCtrl.text.trim(),
-        phoneNumber: _phoneCtrl.text.trim(),
+        clientId: _selectedClient!.id,
         amount: amount,
         description: _descCtrl.text.trim(),
-        dates: _selectedDate,
-        isPaid: _isPaid,
+        dueDate: _dueDate,
+        //dates : _paymentDate,
+        paymentMethod: _paymentMethodCtrl.text.trim().isNotEmpty
+            ? _paymentMethodCtrl.text.trim()
+            : null,
+        paymentReference: _paymentReferenceCtrl.text.trim().isNotEmpty
+            ? _paymentReferenceCtrl.text.trim()
+            : null,
+        notes: _notesCtrl.text.trim().isNotEmpty
+            ? _notesCtrl.text.trim()
+            : null,
         userId: 'mobile-user',
       );
 
       if (!mounted) return;
-
-      // SnackBar pour succès
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Dette ajoutée avec succès !'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // Navigator.pop sécurisé après le frame courant
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go('/debts'); // ou la page que tu veux
-      },
-    );
+      context.go('/debts');
     } catch (e) {
-      if (!mounted) return;
-
-      // SnackBar pour erreur
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur : $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -86,101 +118,83 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
 
   @override
   void dispose() {
-    _clientCtrl.dispose();
-    _phoneCtrl.dispose();
     _amountCtrl.dispose();
     _descCtrl.dispose();
+    _paymentMethodCtrl.dispose();
+    _paymentReferenceCtrl.dispose();
+    _notesCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final clientsAsync = ref.watch(clientsProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Ajouter une Dette')),
+      appBar: AppBar(title: const Text('Ajouter une dette')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Nom du client
-              TextFormField(
-                controller: _clientCtrl,
-                decoration: const InputDecoration(labelText: 'Nom du client'),
-                validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Champ requis' : null,
+              // --- Client ---
+              clientsAsync.when(
+                data: (clients) => DropdownButtonFormField<Client>(
+                  value: _selectedClient,
+                  items: clients
+                      .map(
+                        (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text('${c.name} (${c.phone})'),
+                    ),
+                  )
+                      .toList(),
+                  onChanged: (c) => setState(() => _selectedClient = c),
+                  decoration: const InputDecoration(
+                    labelText: 'Client*',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) => v == null ? 'Client requis' : null,
+                ),
+                loading: () => const CircularProgressIndicator(),
+                error: (e, _) => Text('Erreur: $e'),
               ),
+
               const SizedBox(height: 16),
 
-              // Téléphone
-              TextFormField(
-                controller: _phoneCtrl,
-                decoration: const InputDecoration(labelText: 'Téléphone'),
-                keyboardType: TextInputType.phone,
-                validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Champ requis' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // Montant
               TextFormField(
                 controller: _amountCtrl,
-                decoration: const InputDecoration(labelText: 'Montant'),
                 keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
-                validator: (v) {
-                  final value = double.tryParse(v ?? '');
-                  if (v == null || v.trim().isEmpty) return 'Champ requis';
-                  if (value == null || value <= 0) return 'Montant invalide';
-                  return null;
-                },
+                decoration: const InputDecoration(
+                  labelText: 'Montant*',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                (v == null || double.tryParse(v) == null)
+                    ? 'Montant invalide'
+                    : null,
               ),
+
               const SizedBox(height: 16),
 
-              // Description
               TextFormField(
                 controller: _descCtrl,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Description*',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                v == null || v.isEmpty ? 'Description requise' : null,
               ),
-              const SizedBox(height: 16),
 
-              // Date
-              Row(
-                children: [
-                  const Icon(Icons.calendar_today),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Date : ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _pickDate,
-                    child: const Text('Modifier'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Statut payé
-              Row(
-                children: [
-                  const Text('Dette payée ?'),
-                  Switch(
-                    value: _isPaid,
-                    onChanged: (v) => setState(() => _isPaid = v),
-                  ),
-                ],
-              ),
               const SizedBox(height: 24),
 
-              // Bouton Ajouter
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                onPressed: _submit,
-                child: const Text('Ajouter'),
+              ElevatedButton.icon(
+                onPressed: _isLoading ? null : _submit,
+                icon: const Icon(Icons.save),
+                label: const Text('Enregistrer'),
               ),
             ],
           ),

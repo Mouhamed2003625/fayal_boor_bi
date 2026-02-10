@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../models/client_model.dart';
-import '../../models/debt_model.dart';
+
+
 
 class InfosClientScreen extends StatelessWidget {
   final Client client;
@@ -10,9 +12,14 @@ class InfosClientScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double totalDue = client.debts
-        .where((d) => !d.isPaid)
-        .fold(0, (s, d) => s + d.amount);
+    // Calculs basés sur le nouveau modèle
+    double totalDue = client.totalDebt; // Utilise le getter du modèle
+    double totalPaid = client.totalPaid; // Utilise le getter du modèle
+    double balance = client.balance; // Solde restant
+    double paymentPercentage = client.paymentPercentage; // Pourcentage de paiement
+
+    // Filtrer les dettes par clientId (au cas où il y aurait d'autres dettes)
+    final clientDebts = client.debts.where((d) => d.clientId == client.id).toList();
 
     return Scaffold(
       // ================= APP BAR =================
@@ -33,7 +40,7 @@ class InfosClientScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
-            onPressed: () => context.goNamed('editsclients', extra: client),
+            onPressed: () => context.goNamed('editclient', extra: client),
           ),
         ],
       ),
@@ -81,20 +88,58 @@ class InfosClientScreen extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        // Avatar
-                        Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 40,
-                          ),
+                        // Avatar avec indicateur de statut
+                        Stack(
+                          children: [
+                            Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 3),
+                              ),
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 40,
+                              ),
+                            ),
+                            if (balance == 0)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF16A34A),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            if (balance > 0 && clientDebts.any((d) => d.isOverdue))
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFDC2626),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.warning,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(width: 20),
 
@@ -140,9 +185,9 @@ class InfosClientScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      client.address.isEmpty
-                                          ? "Aucune adresse"
-                                          : client.address,
+                                      client.address?.isNotEmpty == true
+                                          ? client.address!
+                                          : "Aucune adresse",
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 14,
@@ -153,6 +198,26 @@ class InfosClientScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
+                              if (client.product?.isNotEmpty == true) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.shopping_cart,
+                                      color: Colors.white70,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "${client.product!} (x${client.quantity ?? '1'})",
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -166,59 +231,73 @@ class InfosClientScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        // Total dû
+                        // Solde restant
                         Column(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFEE2E2),
+                                color: balance > 0
+                                    ? const Color(0xFFFEE2E2)
+                                    : const Color(0xFFDCFCE7),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.account_balance_wallet,
-                                color: Color(0xFFDC2626),
+                              child: Icon(
+                                balance > 0
+                                    ? Icons.account_balance_wallet
+                                    : Icons.check_circle,
+                                color: balance > 0
+                                    ? const Color(0xFFDC2626)
+                                    : const Color(0xFF16A34A),
                                 size: 24,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              "Total dû",
-                              style: TextStyle(
+                            Text(
+                              balance > 0 ? "Solde dû" : "Soldé",
+                              style: const TextStyle(
                                 color: Color(0xFF64748B),
                                 fontSize: 12,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "${totalDue.toStringAsFixed(0)} FCFA",
-                              style: const TextStyle(
+                              "${balance.abs().toStringAsFixed(0)} FCFA",
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFDC2626),
+                                color: balance > 0
+                                    ? const Color(0xFFDC2626)
+                                    : const Color(0xFF16A34A),
                               ),
                             ),
                           ],
                         ),
 
-                        // Nombre de dettes
+                        // Pourcentage paiement
                         Column(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3C7),
+                                color: paymentPercentage >= 50
+                                    ? const Color(0xFFFEF3C7)
+                                    : const Color(0xFFFEE2E2),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.list_alt,
-                                color: Color(0xFFD97706),
+                              child: Icon(
+                                paymentPercentage >= 50
+                                    ? Icons.trending_up
+                                    : Icons.trending_down,
+                                color: paymentPercentage >= 50
+                                    ? const Color(0xFFD97706)
+                                    : const Color(0xFFDC2626),
                                 size: 24,
                               ),
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              "Dettes",
+                              "Payé",
                               style: TextStyle(
                                 color: Color(0xFF64748B),
                                 fontSize: 12,
@@ -226,34 +305,42 @@ class InfosClientScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "${client.debts.length}",
-                              style: const TextStyle(
+                              "${paymentPercentage.toStringAsFixed(0)}%",
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFD97706),
+                                color: paymentPercentage >= 50
+                                    ? const Color(0xFFD97706)
+                                    : const Color(0xFFDC2626),
                               ),
                             ),
                           ],
                         ),
 
-                        // Dettes payées
+                        // Dettes en retard
                         Column(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFDCFCE7),
+                                color: clientDebts.any((d) => d.isOverdue)
+                                    ? const Color(0xFFFEE2E2)
+                                    : const Color(0xFFDCFCE7),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.check_circle,
-                                color: Color(0xFF16A34A),
+                              child: Icon(
+                                clientDebts.any((d) => d.isOverdue)
+                                    ? Icons.warning
+                                    : Icons.schedule,
+                                color: clientDebts.any((d) => d.isOverdue)
+                                    ? const Color(0xFFDC2626)
+                                    : const Color(0xFF16A34A),
                                 size: 24,
                               ),
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              "Payées",
+                              "Retards",
                               style: TextStyle(
                                 color: Color(0xFF64748B),
                                 fontSize: 12,
@@ -261,11 +348,13 @@ class InfosClientScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "${client.debts.where((d) => d.isPaid).length}",
-                              style: const TextStyle(
+                              "${clientDebts.where((d) => d.isOverdue).length}",
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF16A34A),
+                                color: clientDebts.any((d) => d.isOverdue)
+                                    ? const Color(0xFFDC2626)
+                                    : const Color(0xFF16A34A),
                               ),
                             ),
                           ],
@@ -274,6 +363,72 @@ class InfosClientScreen extends StatelessWidget {
                     ),
                   ),
 
+                  // ========== BARRE DE PROGRESSION ==========
+                  if (totalDue > 0)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Progression de paiement",
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                "${totalPaid.toStringAsFixed(0)}/${totalDue.toStringAsFixed(0)} FCFA",
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(
+                            value: paymentPercentage / 100,
+                            backgroundColor: Colors.grey[200],
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              paymentPercentage >= 50
+                                  ? const Color(0xFF16A34A)
+                                  : const Color(0xFFD97706),
+                            ),
+                            minHeight: 8,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Impayé: ${balance.toStringAsFixed(0)} FCFA",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              Text(
+                                "Payé: ${totalPaid.toStringAsFixed(0)} FCFA",
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF16A34A),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+
                   // ========== LISTE DES DETTES ==========
                   Expanded(
                     child: Padding(
@@ -281,20 +436,34 @@ class InfosClientScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 16),
-                            child: Text(
-                              "Détails des dettes",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1E293B),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "Historique des dettes",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1E293B),
+                                ),
                               ),
-                            ),
+                              if (clientDebts.isNotEmpty)
+                                TextButton.icon(
+                                  onPressed: () {
+                                    // Navigation vers ajout de dette
+                                    context.go('/ajoutdebt', extra: client);
+                                  },
+                                  icon: const Icon(Icons.add, size: 16),
+                                  label: const Text("Nouvelle dette"),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xFF3B82F6),
+                                  ),
+                                ),
+                            ],
                           ),
 
                           Expanded(
-                            child: client.debts.isEmpty
+                            child: clientDebts.isEmpty
                                 ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -306,19 +475,29 @@ class InfosClientScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 16),
                                   const Text(
-                                    "Aucune dette",
+                                    "Aucune dette enregistrée",
                                     style: TextStyle(
                                       color: Color(0xFF94A3B8),
                                       fontSize: 16,
                                     ),
                                   ),
+                                  const SizedBox(height: 8),
+                                  TextButton(
+                                    onPressed: () {
+                                      context.go('/ajoutdebt', extra: client);
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: const Color(0xFF3B82F6),
+                                    ),
+                                    child: const Text("Ajouter une dette"),
+                                  ),
                                 ],
                               ),
                             )
                                 : ListView.builder(
-                              itemCount: client.debts.length,
+                              itemCount: clientDebts.length,
                               itemBuilder: (context, index) {
-                                final debt = client.debts[index];
+                                final debt = clientDebts[index];
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   elevation: 0,
@@ -335,29 +514,58 @@ class InfosClientScreen extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         color: debt.isPaid
                                             ? const Color(0xFFDCFCE7)
-                                            : const Color(0xFFFEE2E2),
+                                            : debt.isOverdue
+                                            ? const Color(0xFFFEE2E2)
+                                            : const Color(0xFFFEF3C7),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
                                         debt.isPaid
                                             ? Icons.check
+                                            : debt.isOverdue
+                                            ? Icons.warning
                                             : Icons.access_time,
                                         color: debt.isPaid
                                             ? const Color(0xFF16A34A)
-                                            : const Color(0xFFDC2626),
+                                            : debt.isOverdue
+                                            ? const Color(0xFFDC2626)
+                                            : const Color(0xFFD97706),
                                         size: 20,
                                       ),
                                     ),
-                                    title: Text(
-                                      "${debt.amount.toStringAsFixed(0)} FCFA",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF1E293B),
-                                      ),
+                                    title: Row(
+                                      children: [
+                                        Text(
+                                          "${debt.amount.toStringAsFixed(0)} FCFA",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF1E293B),
+                                          ),
+                                        ),
+                                        if (debt.isOverdue)
+                                          Container(
+                                            margin: const EdgeInsets.only(left: 8),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFEE2E2),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              "${debt.daysOverdue}j",
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFFDC2626),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                     subtitle: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           debt.description,
@@ -366,13 +574,41 @@ class InfosClientScreen extends StatelessWidget {
                                           ),
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(
-                                          "Échéance: ${debt.dates.day}/${debt.dates.month}/${debt.dates.year}",
-                                          style: TextStyle(
-                                            color: Colors.grey[500],
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              "Créée: ${debt.createdAt.day}/${debt.createdAt.month}/${debt.createdAt.year}",
+                                              style: TextStyle(
+                                                color: Colors.grey[500],
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              "Échéance: ${debt.dueDate.day}/${debt.dueDate.month}/${debt.dueDate.year}",
+                                              style: TextStyle(
+                                                color: debt.isOverdue
+                                                    ? const Color(0xFFDC2626)
+                                                    : Colors.grey[500],
+                                                fontSize: 11,
+                                                fontWeight: debt.isOverdue
+                                                    ? FontWeight.w600
+                                                    : FontWeight.normal,
+                                              ),
+                                            ),
+                                          ],
                                         ),
+                                        // CORRECTION: Vérifier si dates n'est pas null
+                                        if (debt.dates != null) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            "Payée: ${debt.dates!.day}/${debt.dates!.month}/${debt.dates!.year}",
+                                            style: const TextStyle(
+                                              color: Color(0xFF16A34A),
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                     trailing: Container(
@@ -381,24 +617,33 @@ class InfosClientScreen extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         color: debt.isPaid
                                             ? const Color(0xFFDCFCE7)
-                                            : const Color(0xFFFEE2E2),
-                                        borderRadius:
-                                        BorderRadius.circular(20),
+                                            : debt.isOverdue
+                                            ? const Color(0xFFFEE2E2)
+                                            : const Color(0xFFFEF3C7),
+                                        borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Text(
-                                        debt.isPaid ? "Payée" : "En attente",
+                                        debt.isPaid
+                                            ? "Payée"
+                                            : debt.isOverdue
+                                            ? "En retard"
+                                            : "En attente",
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                           color: debt.isPaid
                                               ? const Color(0xFF16A34A)
-                                              : const Color(0xFFDC2626),
+                                              : debt.isOverdue
+                                              ? const Color(0xFFDC2626)
+                                              : const Color(0xFFD97706),
                                         ),
                                       ),
                                     ),
                                     onTap: () {
-                                      // Option: Navigation vers détails de la dette
-                                      // context.go('/debt-details', extra: debt);
+                                      context.goNamed(
+                                        'debt-details',
+                                        extra: debt,
+                                      );
                                     },
                                   ),
                                 );
@@ -430,8 +675,8 @@ class InfosClientScreen extends StatelessWidget {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () {
-                  // Navigation vers historique des paiements
-                  context.go('/payment-history', extra: client);
+                  // Navigation vers ajout de dette
+                  context.go('/ajoutdebt', extra: client);
                 },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -440,9 +685,9 @@ class InfosClientScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                icon: const Icon(Icons.history, color: Color(0xFF3B82F6)),
+                icon: const Icon(Icons.add_chart, color: Color(0xFF3B82F6)),
                 label: const Text(
-                  "Historique",
+                  "Nouvelle dette",
                   style: TextStyle(color: Color(0xFF3B82F6)),
                 ),
               ),

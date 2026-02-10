@@ -3,25 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../models/debt_model.dart';
-import '../repositories/auth_repository.dart';
-import '../screens/dettes/debt_details_screen.dart';
-import '../screens/dettes/debts_screen.dart';
-import '../screens/dettes/edit_debt_screen.dart';
-import '../screens/login_screen.dart';
-import '../screens/register_screen.dart';
-import '../screens/forgot_password_screen.dart';
-import '../screens/home_screen.dart';
-import '../screens/dashboard_screen.dart';
-import '../screens/dettes/add_debt_screen.dart';
-import '../screens/clients/clients_screen.dart';
-import '../screens/clients/add_client_screen.dart';
-import '../screens/clients/infos_client_screen.dart';
-import '../screens/clients/edit_client_screen.dart';
-import '../screens/paiements/payments_screen.dart';
-import '../screens/paiements/add_payment_screen.dart';
-import '../screens/notifications/notifications_screen.dart';
-import '../models/client_model.dart';
+import '../../models/debt_model.dart';
+import '../../repositories/auth_repository.dart';
+import '../../screens/dettes/debt_details_screen.dart';
+import '../../screens/dettes/debts_screen.dart';
+import '../../screens/dettes/edit_debt_screen.dart';
+import '../../screens/app_screens/login_screen.dart';
+import '../../screens/app_screens/register_screen.dart';
+import '../../screens/app_screens/forgot_password_screen.dart';
+import '../../screens/app_screens/home_screen.dart';
+import '../../screens/app_screens/dashboard_screen.dart';
+import '../../screens/dettes/add_debt_screen.dart';
+import '../../screens/clients/clients_screen.dart';
+import '../../screens/clients/add_client_screen.dart';
+import '../../screens/clients/infos_client_screen.dart';
+import '../../screens/clients/edit_client_screen.dart';
+import '../../screens/paiements/payments_screen.dart';
+import '../../screens/paiements/add_payment_screen.dart';
+import '../../models/client_model.dart';
 
 /// 🔁 Permet à GoRouter de se rafraîchir quand Firebase Auth change
 class GoRouterRefreshStream extends ChangeNotifier {
@@ -293,12 +292,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AddDebtScreen(),
       ),
 
-      // 🔔 Notifications
-      GoRoute(
-        path: '/notification',
-        name: 'notification',
-        builder: (context, state) => const NotificationsScreen(),
-      ),
     ],
 
     // 🚨 Gestionnaire d'erreurs global
