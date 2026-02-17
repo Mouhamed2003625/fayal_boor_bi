@@ -9,20 +9,14 @@ class PaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = DateFormat('dd MMM yyyy HH:mm').format(payment.paidAt);
+    final date = DateFormat('dd MMM yyyy HH:mm').format(payment.paymentDate);
 
     return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: ListTile(
         leading: const Icon(Icons.payment, color: Colors.green),
         title: Text("Dette #${payment.debtId}"),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Payé le : $date"),
-            if (payment.method != null)
-              Text("Méthode : ${payment.method}"),
-          ],
-        ),
+        subtitle: Text("Payé le : $date"),
         trailing: Text(
           "${payment.amount.toStringAsFixed(0)} FCFA",
           style: const TextStyle(

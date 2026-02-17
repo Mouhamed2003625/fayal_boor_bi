@@ -4,24 +4,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/debt_model.dart';
+import '../../models/payment_model.dart';
 import '../../providers/debt_provider.dart';
 import '../../repositories/auth_repository.dart';
 import '../../widgets/debt_card.dart';
 
-
-
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Charge les dettes une seule fois
+    Future.microtask(() => ref.read(debtProvider.notifier).loadDebts());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final debtState = ref.watch(debtProvider);
-
-    // Charger les dettes si la liste est vide
-    if (!debtState.isLoading && debtState.debts.isEmpty && debtState.error == null) {
-      Future.microtask(() => ref.read(debtProvider.notifier).loadDebts());
-    }
-
     final debts = debtState.debts;
     final isLoading = debtState.isLoading;
     final error = debtState.error;
@@ -29,15 +34,14 @@ class DashboardScreen extends ConsumerWidget {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (error != null) return Center(child: Text("Erreur : $error"));
 
-    // Calcul des métriques
-    final totalDue = debts.where((d) => !d.isPaid).fold<double>(0, (s, d) => s + d.amount);
-    final totalPaid = debts.where((d) => d.isPaid).fold<double>(0, (s, d) => s + d.amount);
+    // Totaux et KPI
+    final totalPaid = debts.fold<double>(0, (sum, d) => sum + d.paidAmount);
+    final totalDue = debts.fold<double>(0, (sum, d) => sum + (d.amount - d.paidAmount));
     final pendingCount = debts.where((d) => !d.isPaid).length;
     final paidCount = debts.where((d) => d.isPaid).length;
     final totalDebts = debts.length;
     final recoveryRate = totalDebts > 0 ? (paidCount / totalDebts * 100) : 0;
 
-    // Dettes en retard et à échéance imminente
     final overdueDebts = debts.where((d) => !d.isPaid && d.dueDate.isBefore(DateTime.now())).length;
     final dueThisWeek = debts.where((d) {
       if (d.isPaid) return false;
@@ -45,10 +49,8 @@ class DashboardScreen extends ConsumerWidget {
       return daysUntilDue >= 0 && daysUntilDue <= 7;
     }).length;
 
-    // Top 3 débiteurs
     final topDebtors = debts.where((d) => !d.isPaid).toList()
-      ..sort((a, b) => b.amount.compareTo(a.amount))
-      ..take(3);
+      ..sort((a, b) => b.amount.compareTo(a.amount));
 
     return Scaffold(
       backgroundColor: Colors.white70,
@@ -57,21 +59,10 @@ class DashboardScreen extends ConsumerWidget {
         elevation: 1,
         title: const Text(
           "Dashboard",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.black54),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.black54),
-            onPressed: () => context.go('/notification'),
-          ),
+          IconButton(icon: const Icon(Icons.search, color: Colors.black54), onPressed: () {}),
         ],
       ),
       drawer: _buildDrawer(context, ref),
@@ -142,7 +133,7 @@ class DashboardScreen extends ConsumerWidget {
               // Graphiques
               Row(
                 children: [
-                  Expanded(flex: 2, child: _buildOverviewChart(debts, totalDue, totalPaid)),
+                  Expanded(flex: 2, child: _buildOverviewChart(totalDue, totalPaid)),
                   const SizedBox(width: 12),
                   Expanded(flex: 1, child: _buildStatusChart(pendingCount, paidCount, overdueDebts)),
                 ],
@@ -164,9 +155,9 @@ class DashboardScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    _DebtorListHeader(),
+                    const _DebtorListHeader(),
                     const SizedBox(height: 8),
-                    ...topDebtors.map((debt) => _DebtorListItem(debt: debt)).toList(),
+                    ...topDebtors.take(3).map((debt) => _DebtorListItem(debt: debt)),
                     if (topDebtors.isEmpty)
                       const Padding(
                         padding: EdgeInsets.all(16),
@@ -182,7 +173,7 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   Expanded(child: _buildAlertsCard(debts)),
                   const SizedBox(width: 12),
-                  Expanded(child: _buildQuickActions()),
+                  Expanded(child: _buildQuickActions(context)),
                 ],
               ),
               const SizedBox(height: 24),
@@ -226,7 +217,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // --- Drawer ---
+  // ------------------- Drawer -------------------
   Widget _buildDrawer(BuildContext context, WidgetRef ref) {
     return Drawer(
       child: ListView(
@@ -248,22 +239,18 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   child: const Icon(Icons.storefront, color: Color(0xFF3B82F6), size: 32),
                 ),
+
                 const SizedBox(height: 12),
-                const Text(
-                  "Boutique du peuple",
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const Text(
-                  "Compte commerçant",
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
+                const Text("Boutique du peuple", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text("Compte commerçant", style: TextStyle(color: Colors.white70, fontSize: 12)),
               ],
             ),
           ),
           _DrawerItem(icon: Icons.dashboard, title: "Dashboard", isActive: true, onTap: () => context.go('/dashboard')),
           _DrawerItem(icon: Icons.people, title: "Clients", onTap: () => context.go('/clientScreen')),
-          _DrawerItem(icon: Icons.payment, title: "Paiements", onTap: () => context.go('/payment')),
           _DrawerItem(icon: Icons.account_balance_wallet, title: "Dettes", onTap: () => context.go('/debts')),
+          _DrawerItem(icon: Icons.money, title: "Payments", onTap: () => context.goNamed('ajoutpayement')),
+
           const Divider(),
           _DrawerItem(
             icon: Icons.logout,
@@ -285,7 +272,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // --- KPI Card ---
+  // ------------------- KPI Card -------------------
   Widget _KPICard({
     required String title,
     required String value,
@@ -322,11 +309,167 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildAlertsCard(List<Debt> debts) {
+    final now = DateTime.now();
 
+    final overdue = debts.where((d) =>
+    !d.isPaid && d.dueDate.isBefore(now)).length;
+
+    final dueThisWeek = debts.where((d) {
+      if (d.isPaid) return false;
+      final days = d.dueDate.difference(now).inDays;
+      return days >= 0 && days <= 7;
+    }).length;
+
+    final active = debts.where((d) => !d.isPaid).length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Alertes",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+
+          _alertRow("En retard", overdue, Colors.red),
+          const SizedBox(height: 8),
+          _alertRow("Cette semaine", dueThisWeek, Colors.orange),
+          const SizedBox(height: 8),
+          _alertRow("Actives", active, Colors.blue),
+        ],
+      ),
+    );
+  }
+
+  Widget _alertRow(String label, int value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.circle, size: 10, color: color),
+            const SizedBox(width: 8),
+            Text(label),
+          ],
+        ),
+        Text(
+          "$value",
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Actions rapides",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+
+          _quickButton(
+            icon: Icons.person_add,
+            label: "Nouveau client",
+            color: const Color(0xFF3B82F6),
+            onTap: () => context.go('/addClient'),
+          ),
+          const SizedBox(height: 12),
+          _quickButton(
+            icon: Icons.add_card,
+            label: "Nouvelle dette",
+            color: Colors.orange,
+            onTap: () => context.go('/debts'),
+          ),
+          const SizedBox(height: 12),
+
+        ],
+      ),
+    );
+  }
+
+  Widget _quickButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(width: 12),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// --- Graphique Vue d'ensemble ---
-Widget _buildOverviewChart(List<Debt> debts, double totalDue, double totalPaid) {
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final bool isActive;
+  final Color? color;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.isActive = false,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final itemColor = color ?? (isActive ? const Color(0xFF3B82F6) : Colors.black87);
+
+    return ListTile(
+      leading: Icon(icon, color: itemColor),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: itemColor,
+          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+
+// ------------------- Graphiques -------------------
+Widget _buildOverviewChart(double totalDue, double totalPaid) {
+  final maxY = (totalDue + totalPaid) * 1.2;
   return Container(
     decoration: BoxDecoration(
       color: Colors.white,
@@ -339,40 +482,35 @@ Widget _buildOverviewChart(List<Debt> debts, double totalDue, double totalPaid) 
       children: [
         const Text("Vue d'ensemble", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Text("Total: ${(totalDue + totalPaid).toStringAsFixed(0)} FCFA",
-            style: const TextStyle(color: Colors.grey, fontSize: 13)),
+        Text("Total: ${(totalDue + totalPaid).toStringAsFixed(0)} FCFA", style: const TextStyle(color: Colors.grey, fontSize: 13)),
         const SizedBox(height: 16),
         SizedBox(
           height: 150,
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
-              maxY: (totalDue + totalPaid) * 1.2,
+              maxY: maxY,
               barGroups: [
-                BarChartGroupData(
-                  x: 0,
-                  barRods: [BarChartRodData(toY: totalDue, color: Colors.red)],
-                  showingTooltipIndicators: [0],
-                ),
-                BarChartGroupData(
-                  x: 1,
-                  barRods: [BarChartRodData(toY: totalPaid, color: Colors.green)],
-                  showingTooltipIndicators: [0],
-                ),
+                BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: totalDue, color: Colors.red)], showingTooltipIndicators: [0]),
+                BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: totalPaid, color: Colors.green)], showingTooltipIndicators: [0]),
               ],
               titlesData: FlTitlesData(
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      return Text(value.toInt() == 0 ? "Dû" : "Payé",
-                          style: const TextStyle(fontSize: 12));
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      switch (value.toInt()) {
+                        case 0:
+                          return const Text("Dû", style: TextStyle(fontSize: 12));
+                        case 1:
+                          return const Text("Payé", style: TextStyle(fontSize: 12));
+                        default:
+                          return const Text("");
+                      }
                     },
                   ),
                 ),
-                leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
+                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
               gridData: const FlGridData(show: false),
             ),
@@ -383,8 +521,8 @@ Widget _buildOverviewChart(List<Debt> debts, double totalDue, double totalPaid) 
   );
 }
 
-// --- Graphique Statut des dettes ---
 Widget _buildStatusChart(int pending, int paid, int overdue) {
+  final total = pending + paid + overdue;
   return Container(
     decoration: BoxDecoration(
       color: Colors.white,
@@ -397,159 +535,40 @@ Widget _buildStatusChart(int pending, int paid, int overdue) {
       children: [
         const Text("Statut des dettes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
-        _StatusItem(
-          label: "En attente",
-          value: pending,
-          color: Colors.orange,
-          percentage: (pending + paid) > 0 ? (pending / (pending + paid) * 100) : 0,
-        ),
-        _StatusItem(
-          label: "Payé",
-          value: paid,
-          color: Colors.green,
-          percentage: (pending + paid) > 0 ? (paid / (pending + paid) * 100) : 0,
-        ),
-        _StatusItem(
-          label: "En retard",
-          value: overdue,
-          color: Colors.red,
-          percentage: (pending + paid) > 0 ? (overdue / (pending + paid) * 100) : 0,
-        ),
+        _StatusItem(label: "En attente", value: pending, percentage: total > 0 ? (pending / total * 100) : 0, color: Colors.orange),
+        _StatusItem(label: "Payé", value: paid, percentage: total > 0 ? (paid / total * 100) : 0, color: Colors.green),
+        _StatusItem(label: "En retard", value: overdue, percentage: total > 0 ? (overdue / total * 100) : 0, color: Colors.red),
       ],
     ),
   );
 }
 
-// --- Carte Alertes ---
-Widget _buildAlertsCard(List<Debt> debts) {
-  final overdueCount = debts.where((d) => !d.isPaid && d.dueDate.isBefore(DateTime.now())).length;
-  final dueSoonCount = debts.where((d) {
-    if (d.isPaid) return false;
-    final daysUntilDue = d.dueDate.difference(DateTime.now()).inDays;
-    return daysUntilDue >= 0 && daysUntilDue <= 3;
-  }).length;
-
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey[200]!),
-    ),
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Alertes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        if (overdueCount > 0)
-          _AlertItem(
-            icon: Icons.warning,
-            text: "$overdueCount dette(s) en retard",
-            color: Colors.red,
-          ),
-        if (dueSoonCount > 0)
-          _AlertItem(
-            icon: Icons.notifications_active,
-            text: "$dueSoonCount échéance(s) dans 3 jours",
-            color: Colors.orange,
-          ),
-        if (overdueCount == 0 && dueSoonCount == 0)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text("Aucune alerte pour le moment", style: TextStyle(color: Colors.grey, fontSize: 14)),
-          ),
-      ],
-    ),
-  );
-}
-
-// --- Actions rapides ---
-Widget _buildQuickActions() {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey[200]!),
-    ),
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Actions rapides", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.5,
-          children: [
-            _QuickActionItem(
-              icon: Icons.add,
-              label: "Nouveau client",
-              onTap: (context) => context.go('/addclient'),
-            ),
-            _QuickActionItem(
-              icon: Icons.payment,
-              label: "Nouveau paiement",
-              onTap: (context) => context.go('/ajoutpayement'),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-// --- Drawer Item ---
-class _DrawerItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final bool isActive;
-  final Color? color;
-  final VoidCallback onTap;
-
-  const _DrawerItem({required this.icon, required this.title, this.isActive = false, this.color, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? (isActive ? const Color(0xFF3B82F6) : Colors.grey[700])),
-      title: Text(title, style: TextStyle(color: color ?? (isActive ? const Color(0xFF3B82F6) : Colors.grey[700]), fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
-      tileColor: isActive ? const Color(0xFF3B82F6).withOpacity(0.1) : null,
-      onTap: onTap,
-    );
-  }
-}
-
-// --- Status Item ---
+// ------------------- Status Item -------------------
 class _StatusItem extends StatelessWidget {
   final String label;
   final int value;
-  final Color color;
   final double percentage;
+  final Color color;
 
-  const _StatusItem({required this.label, required this.value, required this.color, required this.percentage});
+  const _StatusItem({required this.label, required this.value, required this.percentage, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text(label, style: const TextStyle(fontSize: 14)),
-            Text("$value (${percentage.toStringAsFixed(1)}%)", style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+            Text(label),
+            Text("$value (${percentage.toStringAsFixed(1)}%)"),
           ]),
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: percentage / 100,
-            backgroundColor: Colors.grey[200],
             color: color,
-            minHeight: 4,
-            borderRadius: BorderRadius.circular(2),
+            backgroundColor: Colors.grey[200],
+            minHeight: 6,
           ),
         ],
       ),
@@ -557,120 +576,48 @@ class _StatusItem extends StatelessWidget {
   }
 }
 
-// --- Alert Item ---
-class _AlertItem extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
+// ------------------- Alerts & Quick Actions -------------------
+// ... (idem à ton code, avec routes corrigées) ...
 
-  const _AlertItem({required this.icon, required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
-          Expanded(child: Text(text, style: TextStyle(color: color, fontSize: 14))),
-        ],
-      ),
-    );
-  }
-}
-
-// --- Quick Action Item ---
-class _QuickActionItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Function(BuildContext) onTap;
-
-  const _QuickActionItem({required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => onTap(context),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: const Color(0xFF3B82F6).withOpacity(0.1), shape: BoxShape.circle),
-              child: Icon(icon, color: const Color(0xFF3B82F6), size: 24),
-            ),
-            const SizedBox(height: 12),
-            Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF1E293B))),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// --- Top Debtor Header ---
+// ------------------- Debtor List -------------------
 class _DebtorListHeader extends StatelessWidget {
+  const _DebtorListHeader();
+
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Expanded(flex: 2, child: Text("Client", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-        Expanded(child: Text("Montant", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-        Expanded(child: Text("Jours", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+    return Row(
+      children: const [
+        Expanded(flex: 3, child: Text("Client", style: TextStyle(fontWeight: FontWeight.bold))),
+        Expanded(flex: 2, child: Text("Montant", style: TextStyle(fontWeight: FontWeight.bold))),
+        Expanded(flex: 2, child: Text("Échéance", style: TextStyle(fontWeight: FontWeight.bold))),
+        Expanded(flex: 1, child: Text("Status", style: TextStyle(fontWeight: FontWeight.bold))),
       ],
     );
   }
 }
 
-// --- Top Debtor Item ---
 class _DebtorListItem extends StatelessWidget {
   final Debt debt;
-
   const _DebtorListItem({required this.debt});
 
   @override
   Widget build(BuildContext context) {
-    final daysOverdue = debt.isOverdue ? debt.daysOverdue : 0;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey[200]!))),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
+          Expanded(flex: 3, child: Text(debt.client?.name ?? "Client ${debt.clientId}")),
+          Expanded(flex: 2, child: Text("${debt.amount.toStringAsFixed(0)} FCFA")),
           Expanded(
             flex: 2,
-            child: Text(debt.client?.name ?? "Client ${debt.clientId}", style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis),
+            child: Text("${debt.dueDate.day.toString().padLeft(2,'0')}/${debt.dueDate.month.toString().padLeft(2,'0')}/${debt.dueDate.year}"),
           ),
           Expanded(
-            child: Text("${debt.amount.toStringAsFixed(0)} FCFA", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          ),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: daysOverdue > 30 ? Colors.red.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                debt.isPaid ? "Payé" : "$daysOverdue",
-                style: TextStyle(color: debt.isPaid ? Colors.green : (daysOverdue > 30 ? Colors.red : Colors.orange), fontSize: 12, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-            ),
+            flex: 1,
+            child: Icon(debt.isPaid ? Icons.check_circle : Icons.pending, color: debt.isPaid ? Colors.green : Colors.orange),
           ),
         ],
       ),
     );
   }
 }
-

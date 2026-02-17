@@ -6,110 +6,85 @@ import '../services/api_config.dart';
 import 'client_repository.dart';
 
 class ClientRepositoryMySql implements ClientRepository {
-  // http.client: ici client represente l'pbjet capable de gerer le cycle de vie d'une requete.
-  // comme la configuration des headers, les redirections, et le pool de connexions.
-  // c'est a dire il permet d'envoyer des requetes http et de recevoir des reponses http.
-  final http.Client _httpClient;
+  final http.Client _client;
 
-  ClientRepositoryMySql({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+  ClientRepositoryMySql({http.Client? client})
+      : _client = client ?? http.Client();
 
-  // --------------------------------------------------------------------------
-  // Récupérer tous les clients
-  // --------------------------------------------------------------------------
   @override
   Future<List<Client>> getClients({String? search}) async {
     final uri = Uri.parse(ApiConfig.listClientUrl()).replace(
-      queryParameters: {
-        if (search != null || search!.isNotEmpty) 'search' : search,
-      },
+      queryParameters: search != null && search.isNotEmpty
+          ? {'search': search}
+          : null,
     );
 
-    final response = await _httpClient.get(
-      uri,
-      headers: {'Accept': 'application/json'},
-    );
+    final response = await _client.get(uri, headers: {'Accept': 'application/json'});
 
     if (response.statusCode != 200) {
-      throw Exception('Erreur chargement clients: ${response.statusCode} Reason : ${response.reasonPhrase}');
+      throw Exception('Erreur chargement clients: ${response.statusCode}');
     }
 
     final body = jsonDecode(response.body);
-    final List data = body['data'] ?? [];
+    final List<dynamic> data = body['data'] ?? [];
+
     return data.map((e) => Client.fromJson(e)).toList();
   }
 
-  // --------------------------------------------------------------------------
-  // Récupérer un client par ID
-  // --------------------------------------------------------------------------
   @override
-  Future<Client> getClientById(String id) async {
+  Future<Client> getClientById(int id) async {
     final uri = Uri.parse(ApiConfig.listClientByIdUrl(id));
-
-    final response = await _httpClient.get(
-      uri,
-      headers: {'Accept': 'application/json'},
-    );
+    final response = await _client.get(uri, headers: {'Accept': 'application/json'});
 
     if (response.statusCode != 200) {
-      throw Exception('Erreur chargement client: ${response.statusCode} Reason : ${response.reasonPhrase}');
+      throw Exception('Erreur chargement client: ${response.statusCode}');
     }
 
-    final jsonData = jsonDecode(response.body)['data'];
+    final body = jsonDecode(response.body);
+    final jsonData = body['data'];
     return Client.fromJson(jsonData);
   }
 
-  // --------------------------------------------------------------------------
-  // Créer un client
-  // --------------------------------------------------------------------------
   @override
   Future<Client> createClient(Client client) async {
-    final response = await _httpClient.post(
+    final response = await _client.post(
       Uri.parse(ApiConfig.createClientUrl()),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(client.toMap()),
+      body: jsonEncode(client.toJson()),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Erreur création client: ${response.statusCode} Reason: ${response.reasonPhrase}');
+      throw Exception('Erreur création client: ${response.statusCode}');
     }
 
-    final jsonData = jsonDecode(response.body)['data'];
-    return Client.fromJson(jsonData);
+    final body = jsonDecode(response.body);
+    return Client.fromJson(body['data']);
   }
 
-  // --------------------------------------------------------------------------
-  // Mettre à jour un client
-  // --------------------------------------------------------------------------
   @override
   Future<Client> updateClient(Client client) async {
-    final response = await _httpClient.post(
+    final response = await _client.put(
       Uri.parse(ApiConfig.updateClientUrl()),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(client.toMap()),
+      body: jsonEncode(client.toJson()),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Erreur mise à jour client');
+      throw Exception('Erreur mise à jour client: ${response.statusCode}');
     }
 
-    final jsonData = jsonDecode(response.body)['data'];
-    return Client.fromJson(jsonData);
+    final body = jsonDecode(response.body);
+    return Client.fromJson(body['data']);
   }
 
-  // --------------------------------------------------------------------------
-  // Supprimer un client
-  // --------------------------------------------------------------------------
   @override
-  Future<void> deleteClient(String id) async {
-    final response = await _httpClient.post(
-      Uri.parse(ApiConfig.deleteClientUrl()),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'id': id}),
+  Future<void> deleteClient(int id) async {
+    final response = await _client.delete(
+      Uri.parse(ApiConfig.deleteClientUrl(id)),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Erreur suppression client');
+      throw Exception('Erreur suppression client: ${response.statusCode}');
     }
   }
 }

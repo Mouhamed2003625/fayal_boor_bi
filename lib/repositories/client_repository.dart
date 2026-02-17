@@ -6,12 +6,11 @@ import '../models/client_model.dart';
 abstract class ClientRepository {
   Future<List<Client>> getClients({String? search});
 
-  Future<Client> getClientById(String id);
+  Future<Client> getClientById(int id);
 
   Future<Client> createClient(Client client);
 
   Future<Client> updateClient(Client client);
 
-  Future<void> deleteClient(String id);
-
+  Future<void> deleteClient(int id);
 }

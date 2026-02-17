@@ -74,13 +74,13 @@ class ApiConfig {
 
   static String listClientUrl()   => '$baseUrl/clients/list_client.php';
 
-  static String listClientByIdUrl(String id)   => '$baseUrl/clients/list_client_byId.php';
+  static String listClientByIdUrl(int id)   => '$baseUrl/clients/list_client_byId.php';
 
   static String createClientUrl()   => '$baseUrl/clients/create_clients.php';
 
   static String updateClientUrl()   => '$baseUrl/clients/update_client.php';
 
-  static String deleteClientUrl()   => '$baseUrl/clients/delete_client.php';
+  static String deleteClientUrl(int id)   => '$baseUrl/clients/delete_client.php';
 
 
 
@@ -90,7 +90,7 @@ class ApiConfig {
 
   static String listPaymentUrl(int id)   => '$baseUrl/payments/list_payment.php';
 
-  static String deletePaymentUrl() => '$baseUrl/payments/delete_payment.php';
+  static String deletePaymentUrl(int id) => '$baseUrl/payments/delete_payment.php';
 
   static String updatePaymentUrl() => '$baseUrl/payments/update_payment.php';
 

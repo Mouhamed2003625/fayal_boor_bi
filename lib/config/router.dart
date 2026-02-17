@@ -216,10 +216,14 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 💰 Gestion des paiements
       GoRoute(
-        path: '/payment',
+        path: '/payment/:debtId',
         name: 'payment',
-        builder: (context, state) => const PaymentsScreen(),
+        builder: (context, state) {
+          final debtId = int.parse(state.pathParameters['debtId']!);
+          return PaymentsScreen(debtId: debtId);
+        },
       ),
+
       GoRoute(
         path: '/ajoutpayement',
         name: 'ajoutpayement',
