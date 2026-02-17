@@ -5,11 +5,7 @@ class PaymentState {
   final bool isLoading;
   final String? error;
 
-  PaymentState({
-    this.payments = const [],
-    this.isLoading = false,
-    this.error,
-  });
+  PaymentState({this.payments = const [], this.isLoading = false, this.error});
 
   PaymentState copyWith({
     List<Payment>? payments,

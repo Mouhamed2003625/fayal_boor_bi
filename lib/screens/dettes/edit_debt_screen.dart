@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/debt_model.dart';
 import '../../providers/debt_provider.dart';
-import '../../repositories/debt_repository_mysql.dart';
 
 class EditDebtScreen extends ConsumerStatefulWidget {
   final Debt debt;
@@ -17,15 +16,12 @@ class EditDebtScreen extends ConsumerStatefulWidget {
 
 class _EditDebtScreenState extends ConsumerState<EditDebtScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _clientIdCtrl;
-  late TextEditingController _amountCtrl;
-  late TextEditingController _descCtrl;
-  late TextEditingController _paymentMethodCtrl;
-  late TextEditingController _paymentReferenceCtrl;
-  late TextEditingController _notesCtrl;
 
-  late DateTime _dueDate;
-  late DateTime? _paymentDate;
+  late TextEditingController _productCtrl;
+  late TextEditingController _quantityCtrl;
+  late TextEditingController _amountCtrl;
+
+  late DateTime _selectedDueDate;
 
   bool _isLoading = false;
 
@@ -33,37 +29,35 @@ class _EditDebtScreenState extends ConsumerState<EditDebtScreen> {
   void initState() {
     super.initState();
 
-    // Initialisation des contrôleurs avec les valeurs de la dette existante
-    _clientIdCtrl = TextEditingController(text: widget.debt.clientId);
-    _amountCtrl = TextEditingController(text: widget.debt.amount.toStringAsFixed(2));
-    _descCtrl = TextEditingController(text: widget.debt.description);
-    _paymentMethodCtrl = TextEditingController(text: widget.debt.paymentMethod ?? '');
-    _paymentReferenceCtrl = TextEditingController(text: widget.debt.paymentReference ?? '');
-    _notesCtrl = TextEditingController(text: widget.debt.notes ?? '');
+    // Initialiser les contrôleurs avec les valeurs existantes
+    _productCtrl = TextEditingController(text: widget.debt.product);
+    _quantityCtrl =
+        TextEditingController(text: widget.debt.quantity.toString());
+    _amountCtrl = TextEditingController(text: widget.debt.amount.toString());
 
-    // Initialisation des dates
-    _dueDate = widget.debt.dueDate;
-    _paymentDate = widget.debt.isPaid ? widget.debt.dates : null;
+    // S'assurer que dueDate n'est pas null
+    _selectedDueDate = widget.debt.dueDate ?? DateTime.now();
   }
 
-  Future<void> _pickDueDate() async {
-    final date = await showDatePicker(
+  @override
+  void dispose() {
+    _productCtrl.dispose();
+    _quantityCtrl.dispose();
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
       context: context,
-      initialDate: _dueDate,
-      firstDate: DateTime(2000),
+      initialDate: _selectedDueDate,
+      firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-    if (date != null) setState(() => _dueDate = date);
-  }
 
-  Future<void> _pickPaymentDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _paymentDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-    if (date != null) setState(() => _paymentDate = date);
+    if (picked != null) {
+      setState(() => _selectedDueDate = picked);
+    }
   }
 
   Future<void> _submit() async {
@@ -72,70 +66,30 @@ class _EditDebtScreenState extends ConsumerState<EditDebtScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final repo = ref.read(debtRepositoryProvider);
-
-      final amount = double.tryParse(_amountCtrl.text.trim());
-      if (amount == null || amount <= 0) {
-        throw Exception('Montant invalide');
-      }
-
-      // 🔥 Reconstruction DU modèle Debt (source de vérité)
+      // Créer l'objet Debt à envoyer au provider
       final updatedDebt = Debt(
         id: widget.debt.id,
-        clientId: _clientIdCtrl.text.trim(),
-        client: widget.debt.client, // on conserve
-        amount: amount,
-        description: _descCtrl.text.trim(),
-        createdAt: widget.debt.createdAt, // jamais modifiée
-        dueDate: _dueDate,
-        dates: _paymentDate, // null = non payée
-        paymentMethod: _paymentMethodCtrl.text.trim().isNotEmpty
-            ? _paymentMethodCtrl.text.trim()
-            : null,
-        paymentReference: _paymentReferenceCtrl.text.trim().isNotEmpty
-            ? _paymentReferenceCtrl.text.trim()
-            : null,
-        notes: _notesCtrl.text.trim().isNotEmpty
-            ? _notesCtrl.text.trim()
-            : null,
-        userId: widget.debt.userId,
+        clientId: widget.debt.clientId,
+        product: _productCtrl.text.trim(),
+        quantity: int.parse(_quantityCtrl.text.trim()),
+        amount: double.parse(_amountCtrl.text.trim()),
+        dueDate: _selectedDueDate,
+        payments: widget.debt.payments,
+        client: widget.debt.client,
       );
 
-      await repo.updateDebt(updatedDebt);
+      await ref.read(debtProvider.notifier).updateDebt(updatedDebt);
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Dette modifiée avec succès !'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
+      // Retour à la liste des dettes
       context.go('/debts');
     } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur : $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Erreur : $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _clientIdCtrl.dispose();
-    _amountCtrl.dispose();
-    _descCtrl.dispose();
-    _paymentMethodCtrl.dispose();
-    _paymentReferenceCtrl.dispose();
-    _notesCtrl.dispose();
-    super.dispose();
   }
 
   @override
@@ -143,350 +97,93 @@ class _EditDebtScreenState extends ConsumerState<EditDebtScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Modifier la dette'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
         actions: [
-          // Option pour supprimer la dette
-          if (!_isLoading)
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: _showDeleteDialog,
-            ),
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _submit,
+          ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
             children: [
-              // Affichage informatif
-              Card(
-                color: Colors.blue.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Modification de la dette #${widget.debt.id}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Créée le: ${widget.debt.createdAt.day}/${widget.debt.createdAt.month}/${widget.debt.createdAt.year}',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                      if (widget.debt.isPaid && widget.debt.dates != null)
-                        Text(
-                          'Payée le: ${widget.debt.dates!.day}/${widget.debt.dates!.month}/${widget.debt.dates!.year}',
-                          style: const TextStyle(color: Colors.green),
-                        ),
-                      if (widget.debt.isOverdue)
-                        Text(
-                          '⚠️ En retard de ${widget.debt.daysOverdue} jours',
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // ID du client (obligatoire)
+              // Produit
               TextFormField(
-                controller: _clientIdCtrl,
+                controller: _productCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'ID du client*',
-                  hintText: 'Ex: CLIENT123',
-                  prefixIcon: Icon(Icons.person),
+                  labelText: 'Produit',
+                  border: OutlineInputBorder(),
                 ),
                 validator: (v) =>
-                v == null || v.trim().isEmpty ? 'ID client requis' : null,
+                v == null || v.trim().isEmpty ? 'Produit requis' : null,
               ),
               const SizedBox(height: 16),
 
-              // Montant (obligatoire)
+              // Quantité
               TextFormField(
-                controller: _amountCtrl,
+                controller: _quantityCtrl,
+                keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Montant*',
-                  hintText: 'Ex: 1500.50',
-                  prefixIcon: Icon(Icons.attach_money),
+                  labelText: 'Quantité',
+                  border: OutlineInputBorder(),
                 ),
-                keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
                 validator: (v) {
-                  final value = double.tryParse(v ?? '');
-                  if (v == null || v.trim().isEmpty) return 'Montant requis';
-                  if (value == null || value <= 0) return 'Montant invalide';
+                  final val = int.tryParse(v ?? '');
+                  if (val == null || val <= 0) return 'Quantité invalide';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // Description (obligatoire)
+              // Montant
               TextFormField(
-                controller: _descCtrl,
+                controller: _amountCtrl,
+                keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
-                  labelText: 'Description*',
-                  hintText: 'Détails de la dette/achat',
-                  prefixIcon: Icon(Icons.description),
+                  labelText: 'Montant',
+                  border: OutlineInputBorder(),
                 ),
-                maxLines: 3,
-                validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Description requise' : null,
+                validator: (v) {
+                  final val = double.tryParse(v ?? '');
+                  if (val == null || val <= 0) return 'Montant invalide';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
               // Date d'échéance
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Date d\'échéance*',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            color: _dueDate.isBefore(DateTime.now())
-                                ? Colors.red
-                                : Colors.blue,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: _dueDate.isBefore(DateTime.now())
-                                    ? Colors.red
-                                    : null,
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: _pickDueDate,
-                            child: const Text('Changer'),
-                          ),
-                        ],
-                      ),
-                      if (_dueDate.isBefore(DateTime.now()))
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8),
-                          child: Text(
-                            '⚠️ Cette date est passée',
-                            style: TextStyle(color: Colors.red, fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text("Date d'échéance"),
+                subtitle: Text(
+                  "${_selectedDueDate.day.toString().padLeft(2, '0')}/"
+                      "${_selectedDueDate.month.toString().padLeft(2, '0')}/"
+                      "${_selectedDueDate.year}",
                 ),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: _pickDate,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // Section de paiement
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Statut de paiement',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Date de paiement
-                      Row(
-                        children: [
-                          Icon(
-                            _paymentDate != null
-                                ? Icons.check_circle
-                                : Icons.pending_actions,
-                            color: _paymentDate != null
-                                ? Colors.green
-                                : Colors.orange,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Statut :'),
-                          const SizedBox(width: 8),
-                          Text(
-                            _paymentDate != null ? 'Payée' : 'Non payée',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _paymentDate != null
-                                  ? Colors.green
-                                  : Colors.orange,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (_paymentDate != null)
-                            TextButton(
-                              onPressed: () => setState(() => _paymentDate = null),
-                              child: const Text('Marquer non payée'),
-                            ),
-                        ],
-                      ),
-
-                      if (_paymentDate != null) ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Text('Date de paiement :'),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                '${_paymentDate!.day}/${_paymentDate!.month}/${_paymentDate!.year}',
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: _pickPaymentDate,
-                              child: const Text('Modifier'),
-                            ),
-                          ],
-                        ),
-                      ] else ...[
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: _pickPaymentDate,
-                          icon: const Icon(Icons.payment),
-                          label: const Text('Marquer comme payée'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green.shade50,
-                            foregroundColor: Colors.green,
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(height: 16),
-
-                      // Méthode de paiement
-                      TextFormField(
-                        controller: _paymentMethodCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Méthode de paiement',
-                          hintText: 'Ex: Mobile Money, Espèces, Virement',
-                          prefixIcon: Icon(Icons.payment),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Référence de paiement
-                      TextFormField(
-                        controller: _paymentReferenceCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Référence de transaction',
-                          hintText: 'Ex: TRX123456',
-                          prefixIcon: Icon(Icons.receipt),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Notes supplémentaires
-              TextFormField(
-                controller: _notesCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Notes supplémentaires',
-                  hintText: 'Informations complémentaires',
-                  prefixIcon: Icon(Icons.note_add),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 32),
-
-              // Boutons d'action
+              // Bouton Enregistrer
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => context.go('/debts'),
-                      child: const Text('Annuler'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _submit,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text('Enregistrer'),
-                    ),
-                  ),
-                ],
+                  : ElevatedButton(
+                onPressed: _submit,
+                child: const Text('Enregistrer'),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Future<void> _showDeleteDialog() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer la dette'),
-        content: const Text('Êtes-vous sûr de vouloir supprimer cette dette ? Cette action est irréversible.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      setState(() => _isLoading = true);
-
-      try {
-        final repo = ref.read(debtRepositoryProvider);
-        await repo.deleteDebt(widget.debt.id);
-
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dette supprimée avec succès !'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        context.go('/debts');
-      } catch (e) {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur : $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
   }
 }

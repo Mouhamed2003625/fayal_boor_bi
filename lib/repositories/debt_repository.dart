@@ -1,22 +1,10 @@
-
 import '../models/debt_model.dart';
 
 abstract class DebtRepository {
-  Future<List<Debt>> fetchDebts({
-    String? userId,
-    String? clientId,
-  });
 
-  Future<Debt> addDebt({
-    required String clientId,
-    required double amount,
-    required String description,
-    DateTime? dueDate,
-    String? paymentMethod,
-    String? paymentReference,
-    String? notes,
-    String? userId,
-  });
+  Future<List<Debt>> fetchDebts({int? clientId});
+
+  Future<Debt> addDebt(Debt debt);
 
   Future<Debt> updateDebt(Debt debt);
 
@@ -25,7 +13,5 @@ abstract class DebtRepository {
   Future<Debt> markDebtAsPaid({
     required int debtId,
     required DateTime paymentDate,
-    String? paymentMethod,
-    String? paymentReference,
   });
 }

@@ -12,68 +12,68 @@ class DebtDetailsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Détails de la dette'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.goNamed('debts'), // Retour à l'écran précédent
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
+            tooltip: 'Modifier cette dette',
             onPressed: () {
-              context.go('details');
+              // Navigation vers la page de modification
+              context.goNamed(
+                'editdebt',
+                extra: debt, // On passe l'objet Debt pour l'édition
+              );
             },
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // CORRECTION: Utiliser client?.name au lieu de client
-            Text(
-                'Client : ${debt.client?.name ?? "Client ${debt.clientId}"}',
-                style: const TextStyle(fontSize: 18)
-            ),
+            Text('Client ID : ${debt.clientId}', style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 8),
-            // CORRECTION: Utiliser client?.phone au lieu de client
-            Text('Téléphone : ${debt.client?.phone ?? "Non disponible"}'),
+            Text('Produit : ${debt.product}', style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 8),
-            // CORRECTION: Ajouter FCFA
-            Text('Montant : ${debt.amount.toStringAsFixed(2)} FCFA'),
+            Text('Quantité : ${debt.quantity}', style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 8),
-            // CORRECTION: Gérer le cas où dates est null
-            Text(
-              'Date : ${debt.dates != null ? '${debt.dates!.day}/${debt.dates!.month}/${debt.dates!.year}' : 'Non payée'}',
-            ),
+            Text('Montant : ${debt.amount.toStringAsFixed(2)} FCFA', style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 8),
-            Text('Statut : ${debt.isPaid ? "Payée" : "Non payée"}'),
+            Text('Montant payé : ${debt.paidAmount.toStringAsFixed(2)} FCFA', style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 8),
+            Text('Statut : ${debt.isPaid ? "Payée" : "Non payée"}',
+                style: TextStyle(
+                    fontSize: 18,
+                    color: debt.isPaid ? Colors.green : Colors.red
+                )),
             const SizedBox(height: 16),
-            const Text('Description :'),
-            Text(debt.description),
-            // CORRECTION: Ajouter d'autres informations utiles
-            const SizedBox(height: 16),
-            if (debt.dueDate != null) ...[
-              Text(
-                'Date d\'échéance : ${debt.dueDate.day}/${debt.dueDate.month}/${debt.dueDate.year}',
+
+            // Liste des paiements
+            if (debt.payments.isNotEmpty) ...[
+              const Text('Paiements :', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: debt.payments.length,
+                  itemBuilder: (context, index) {
+                    final payment = debt.payments[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        title: Text('${payment.amount.toStringAsFixed(2)} FCFA'),
+                        subtitle: Text('Référence : ${payment.reference ?? "N/A"}'),
+                        trailing: Text(payment.method ?? ''),
+                      ),
+                    );
+                  },
+                ),
               ),
-              const SizedBox(height: 8),
-            ],
-            if (debt.createdAt != null) ...[
-              Text(
-                'Créée le : ${debt.createdAt.day}/${debt.createdAt.month}/${debt.createdAt.year}',
-              ),
-              const SizedBox(height: 8),
-            ],
-            if (debt.paymentMethod != null) ...[
-              Text('Méthode de paiement : ${debt.paymentMethod}'),
-              const SizedBox(height: 8),
-            ],
-            if (debt.paymentReference != null) ...[
-              Text('Référence paiement : ${debt.paymentReference}'),
-              const SizedBox(height: 8),
-            ],
-            if (debt.notes != null && debt.notes!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text('Notes :'),
-              Text(debt.notes!),
-            ],
+            ] else
+              const Text('Aucun paiement enregistré pour cette dette.'),
           ],
         ),
       ),

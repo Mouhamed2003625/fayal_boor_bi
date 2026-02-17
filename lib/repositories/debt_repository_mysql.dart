@@ -6,122 +6,126 @@ import '../services/api_config.dart';
 import 'debt_repository.dart';
 
 class DebtRepositoryMysql implements DebtRepository {
-  // --------------------------------------------------------------------------
-  // Récupérer toutes les dettes (optionnel : filtrer par userId ou clientId)
-  // --------------------------------------------------------------------------
-  @override
-  Future<List<Debt>> fetchDebts({String? userId, String? clientId}) async {
-    final uri = Uri.parse(ApiConfig.listDebtUrl());
+  final http.Client _client;
 
-    final res = await http.get(uri, headers: {
-      'Accept': 'application/json',
-    });
+  DebtRepositoryMysql({http.Client? client})
+      : _client = client ?? http.Client();
+
+  @override
+  Future<List<Debt>> fetchDebts({int? clientId}) async {
+    final uri = Uri.parse(ApiConfig.listDebtUrl()).replace(
+      queryParameters:
+      clientId != null ? {'client_id': clientId.toString()} : null,
+    );
+
+    final res =
+    await _client.get(uri, headers: {'Accept': 'application/json'});
 
     if (res.statusCode != 200) {
-      throw Exception('Erreur chargement dettes: ${res.statusCode}');
+      throw Exception(
+          'Erreur chargement dettes (${res.statusCode}) : ${res.body}');
     }
 
     final body = jsonDecode(res.body);
     final List data = body['data'] ?? [];
+
     return data.map((e) => Debt.fromJson(e)).toList();
   }
 
-  // --------------------------------------------------------------------------
-  // Créer une dette
-  // --------------------------------------------------------------------------
-  @override
-  Future<Debt> addDebt({
-    required String clientId,
-    required double amount,
-    required String description,
-    DateTime? dueDate,
-    String? paymentMethod,
-    String? paymentReference,
-    String? notes,
-    String? userId,
-  }) async {
-    final res = await http.post(
+  Future<Debt> addDebt(Debt debt) async {
+    // Conversion DateTime -> String YYYY-MM-DD
+    final dueDateStr =
+        '${debt.dueDate.year}-${debt.dueDate.month.toString().padLeft(2, '0')}-${debt.dueDate.day.toString().padLeft(2, '0')}';
+
+    final response = await _client.post(
       Uri.parse(ApiConfig.createDebtUrl()),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'clientId': clientId,
-        'amount': amount,
-        'description': description,
-        'dueDate': dueDate?.toIso8601String(),
-        'paymentMethod': paymentMethod,
-        'paymentReference': paymentReference,
-        'notes': notes,
-        'userId': userId,
+        'clientId': debt.clientId,
+        'product': debt.product,
+        'quantity': debt.quantity,
+        'amount': debt.amount,
+        'dueDate': dueDateStr,
       }),
     );
 
-    if (res.statusCode != 200) {
-      throw Exception('Erreur création dette: ${res.statusCode}');
+    final data = jsonDecode(response.body);
+
+    if (data['ok'] != true) {
+      throw Exception(data['message'] ?? 'Erreur lors de la création de la dette');
     }
 
-    final jsonData = jsonDecode(res.body)['data'];
-    return Debt.fromJson(jsonData);
+    return Debt.fromJson(data['data']);
   }
 
-  // --------------------------------------------------------------------------
-  // Mettre à jour une dette
-  // --------------------------------------------------------------------------
   @override
   Future<Debt> updateDebt(Debt debt) async {
-    final res = await http.put(
+    // Convertir la date au format MySQL
+    final dueDateStr = debt.dueDate != null
+        ? '${debt.dueDate!.year.toString().padLeft(4,'0')}-'
+        '${debt.dueDate!.month.toString().padLeft(2,'0')}-'
+        '${debt.dueDate!.day.toString().padLeft(2,'0')}'
+        : null;
+
+    final Map<String, dynamic> body = {
+      'id': debt.id,
+      'product': debt.product,
+      'quantity': debt.quantity,
+      'amount': debt.amount,
+      'dueDate': dueDateStr, // envoyé comme string
+    };
+
+    final res = await _client.put(
       Uri.parse(ApiConfig.updateDebtUrl()),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(debt.toMap()),
+      body: jsonEncode(body),
     );
 
     if (res.statusCode != 200) {
-      throw Exception('Erreur mise à jour dette: ${res.statusCode}');
+      throw Exception(
+          'Erreur mise à jour dette (${res.statusCode}) : ${res.body}');
     }
 
-    final jsonData = jsonDecode(res.body)['data'];
+    final bodyData = jsonDecode(res.body);
+    final jsonData = bodyData['data'];
+
     return Debt.fromJson(jsonData);
   }
 
-  // --------------------------------------------------------------------------
-  // Supprimer une dette
-  // --------------------------------------------------------------------------
+
   @override
   Future<void> deleteDebt(int id) async {
-    final res = await http.delete(
-      Uri.parse(ApiConfig.deleteDebtUrl(id)),
-    );
+    final res =
+    await _client.delete(Uri.parse(ApiConfig.deleteDebtUrl(id)));
 
     if (res.statusCode != 200) {
-      throw Exception('Erreur suppression dette: ${res.statusCode}');
+      throw Exception(
+          'Erreur suppression dette (${res.statusCode}) : ${res.body}');
     }
   }
 
-  // --------------------------------------------------------------------------
-  // Marquer une dette comme payée
-  // --------------------------------------------------------------------------
   @override
   Future<Debt> markDebtAsPaid({
     required int debtId,
     required DateTime paymentDate,
-    String? paymentMethod,
-    String? paymentReference,
   }) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse(ApiConfig.markDebtAsPaidUrl()),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'id': debtId,
-        'paymentDate': paymentDate.toIso8601String(),
-        'paymentMethod': paymentMethod,
-        'paymentReference': paymentReference,
+        'debt_id': debtId,
+        'payment_date': paymentDate.toIso8601String(),
       }),
     );
 
     if (res.statusCode != 200) {
-      throw Exception('Erreur paiement dette: ${res.statusCode}');
+      throw Exception(
+          'Erreur paiement dette (${res.statusCode}) : ${res.body}');
     }
 
-    final jsonData = jsonDecode(res.body)['data'];
+    final body = jsonDecode(res.body);
+    final jsonData = body['data'];
+
     return Debt.fromJson(jsonData);
   }
 }

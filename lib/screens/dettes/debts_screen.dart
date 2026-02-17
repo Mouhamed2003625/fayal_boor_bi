@@ -1,39 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../providers/debt_provider.dart';
-
+import '../../models/debt_model.dart';
 
 class DebtsScreen extends ConsumerWidget {
   const DebtsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ⚡ Watch le notifier pour obtenir l'état
     final debtState = ref.watch(debtProvider);
-
-    // ⚡ Load debts si vide
-    if (!debtState.isLoading && debtState.debts.isEmpty && debtState.error == null) {
-      // On peut appeler loadDebts ici
-      Future.microtask(() => ref.read(debtProvider.notifier).loadDebts());
-    }
-
     final debts = debtState.debts;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Liste des dettes'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          color: const Color(0xFF3B82F6),
+          onPressed: () {
+            context.goNamed("dashboard");
+          },
+        ),
       ),
-
-      // ➕ AJOUT
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.go('/ajoutdebt');
-        },
+        onPressed: () => context.goNamed('ajoutdebt'),
         child: const Icon(Icons.add),
       ),
-
       body: debtState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : debtState.error != null
@@ -42,21 +35,22 @@ class DebtsScreen extends ConsumerWidget {
           ? const Center(child: Text('Aucune dette enregistrée'))
           : ListView.builder(
         itemCount: debts.length,
-        itemBuilder: (context, i) {
-          final d = debts[i];
-
+        itemBuilder: (context, index) {
+          final d = debts[index];
           return Card(
             child: ListTile(
-              title: Text(d.client?.name ?? 'Client inconnu'),
-              subtitle: Text('${d.amount} FCFA'),
+              title: Text(d.product),
+              subtitle: Text(
+                  'Montant: ${d.amount.toStringAsFixed(0)} FCFA | Payé: ${d.paidAmount.toStringAsFixed(0)} FCFA'),
               trailing: Icon(
                 d.isPaid ? Icons.check_circle : Icons.warning,
                 color: d.isPaid ? Colors.green : Colors.red,
               ),
               onTap: () {
-                context.go(
-                  '/editdebt',
-                  extra: d,
+                // Navigation vers la page de détails
+                context.goNamed(
+                  'details',
+                  extra: d, // on passe l'objet Debt
                 );
               },
             ),

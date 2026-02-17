@@ -1,108 +1,55 @@
-// ============================================================================
-//  MODÈLE : Payment (Versement lié à une dette)
-// ============================================================================
-
 class Payment {
-  /// Identifiant unique du paiement
-  final int id;
-
-  /// Clé étrangère vers la dette
+  final int? id;
   final int debtId;
-
-  /// Montant payé
   final double amount;
-
-  /// Date du paiement
-  final DateTime paidAt;
-
-  /// Méthode de paiement (cash, mobile money, virement…)
+  final DateTime paymentDate;
   final String? method;
-
-  /// Référence de paiement (num transaction, reçu…)
   final String? reference;
-
-  /// Notes supplémentaires
   final String? notes;
-
-  /// Utilisateur ayant enregistré le paiement
-  final String? userId;
+  final int? userId;
 
   Payment({
-    required this.id,
+    this.id,
     required this.debtId,
     required this.amount,
-    required this.paidAt,
+    required this.paymentDate,
     this.method,
     this.reference,
     this.notes,
     this.userId,
   });
 
-  // --------------------------------------------------------------------------
-  // Factory : depuis JSON backend
-  // --------------------------------------------------------------------------
   factory Payment.fromJson(Map<String, dynamic> json) {
     return Payment(
-      id: int.tryParse('${json['id']}') ?? 0,
-      debtId: int.tryParse('${json['debtId'] ?? json['debt_id']}') ?? 0,
-      amount: json['amount'] is num
-          ? (json['amount'] as num).toDouble()
-          : double.tryParse(json['amount']?.toString() ?? '') ?? 0.0,
-      paidAt: json['paidAt'] != null
-          ? DateTime.tryParse(json['paidAt'].toString()) ?? DateTime.now()
-          : (json['paid_at'] != null
-          ? DateTime.tryParse(json['paid_at'].toString()) ?? DateTime.now()
-          : DateTime.now()),
-      method: (json['method'] ?? json['payment_method'])?.toString(),
-      reference: (json['reference'] ?? json['payment_reference'])?.toString(),
+      id: json['id'] != null
+          ? int.parse(json['id'].toString())
+          : null,
+
+      debtId: int.parse(json['debt_id'].toString()),
+      amount: double.parse(json['amount'].toString()),
+      paymentDate: DateTime.parse(json['payment_date'].toString()),
+
+      method: json['method']?.toString(),
+      reference: json['reference']?.toString(),
       notes: json['notes']?.toString(),
-      userId: (json['userId'] ?? json['user_id'])?.toString(),
+      userId: json['user_id'] != null
+          ? int.parse(json['user_id'].toString())
+          : null,
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Conversion vers Map (POST backend)
-  // --------------------------------------------------------------------------
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'debtId': debtId,
+      if (id != null) 'id': id, // ⚠ on n’envoie pas id si null
+      'debt_id': debtId,
       'amount': amount,
-      'paidAt': paidAt.toIso8601String(),
+      'payment_date': paymentDate.toIso8601String(),
       'method': method,
       'reference': reference,
       'notes': notes,
-      'userId': userId,
+      'user_id': userId,
     };
   }
 
-  // --------------------------------------------------------------------------
-  // copyWith
-  // --------------------------------------------------------------------------
-  Payment copyWith({
-    int? id,
-    int? debtId,
-    double? amount,
-    DateTime? paidAt,
-    String? method,
-    String? reference,
-    String? notes,
-    String? userId,
-  }) {
-    return Payment(
-      id: id ?? this.id,
-      debtId: debtId ?? this.debtId,
-      amount: amount ?? this.amount,
-      paidAt: paidAt ?? this.paidAt,
-      method: method ?? this.method,
-      reference: reference ?? this.reference,
-      notes: notes ?? this.notes,
-      userId: userId ?? this.userId,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'Payment{id: $id, debtId: $debtId, amount: $amount, paidAt: $paidAt}';
-  }
+  Map<String, dynamic> toJson() => toMap();
 }
