@@ -6,10 +6,10 @@ class Debt {
   final int clientId;
   final String product;
   final int quantity;
-  final double amount;
-  final DateTime dueDate; // <-- ajouté pour l'échéance
+  final double amount; // montant total de la dette
+  final DateTime dueDate;
   final List<Payment> payments;
-  final Client? client; // info optionnelle du client
+  final Client? client;
 
   Debt({
     required this.id,
@@ -22,30 +22,43 @@ class Debt {
     this.client,
   });
 
-  // Montant déjà payé
+  /// Montant déjà payé
   double get paidAmount => payments.fold(0, (sum, p) => sum + p.amount);
 
-  // Vérifie si la dette est entièrement payée
-  bool get isPaid => paidAmount >= amount;
+  /// Vérifie si la dette est entièrement payée
+  bool get isPaid => paidAmount == amount || paidAmount >= amount ;
 
-  // Création depuis JSON (API)
+  /// Création depuis JSON (API)
   factory Debt.fromJson(Map<String, dynamic> json) {
+    // On prend le montant soit dans 'amount' soit dans 'debtAmount' si l'API ne renvoie pas amount
+    double parseAmount(Map<String, dynamic> data) {
+      if (data['amount'] != null) {
+        return double.tryParse(data['amount'].toString()) ?? 0.0;
+      } else if (data['debtAmount'] != null) {
+        return double.tryParse(data['debtAmount'].toString()) ?? 0.0;
+      } else {
+        return 0.0;
+      }
+    }
+
     return Debt(
       id: int.parse(json['id'].toString()),
       clientId: int.parse(json['client_id'].toString()),
-      product: json['product'],
-      quantity: int.parse(json['quantity'].toString()),
-      amount: double.parse(json['amount'].toString()),
-      dueDate: DateTime.parse(json['due_date'].toString()),
+      product: json['product'] ?? 'Produit inconnu',
+      quantity: int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
+      amount: parseAmount(json),
+      dueDate: DateTime.tryParse(json['due_date']?.toString() ?? '') ??
+          DateTime.now(),
       payments: json['payments'] != null
           ? List<Payment>.from(
           json['payments'].map((p) => Payment.fromJson(p)))
           : [],
-      client: json['client'] != null ? Client.fromJson(json['client']) : null,
+      client:
+      json['client'] != null ? Client.fromJson(json['client']) : null,
     );
   }
 
-  // Conversion vers JSON pour API
+  /// Conversion vers JSON pour API
   Map<String, dynamic> toJson() => {
     'id': id,
     'client_id': clientId,

@@ -4,30 +4,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/debt_model.dart';
+import '../../models/client_model.dart';
 import '../../repositories/auth_repository.dart';
+
 import '../../screens/dettes/debt_details_screen.dart';
 import '../../screens/dettes/debts_screen.dart';
 import '../../screens/dettes/edit_debt_screen.dart';
+import '../../screens/dettes/add_debt_screen.dart';
+
+import '../../screens/clients/clients_screen.dart';
+import '../../screens/clients/add_client_screen.dart';
+import '../../screens/clients/infos_client_screen.dart';
+import '../../screens/clients/edit_client_screen.dart';
+
+import '../../screens/paiements/payments_screen.dart';
+import '../../screens/paiements/add_payment_screen.dart';
+
 import '../../screens/app_screens/login_screen.dart';
 import '../../screens/app_screens/register_screen.dart';
 import '../../screens/app_screens/forgot_password_screen.dart';
 import '../../screens/app_screens/home_screen.dart';
 import '../../screens/app_screens/dashboard_screen.dart';
-import '../../screens/dettes/add_debt_screen.dart';
-import '../../screens/clients/clients_screen.dart';
-import '../../screens/clients/add_client_screen.dart';
-import '../../screens/clients/infos_client_screen.dart';
-import '../../screens/clients/edit_client_screen.dart';
-import '../../screens/paiements/payments_screen.dart';
-import '../../screens/paiements/add_payment_screen.dart';
-import '../../models/client_model.dart';
 
 /// 🔁 Permet à GoRouter de se rafraîchir quand Firebase Auth change
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
-    _subscription = stream.listen((_) {
-      notifyListeners();
-    });
+    _subscription = stream.listen((_) => notifyListeners());
   }
 
   late final StreamSubscription _subscription;
@@ -40,11 +42,8 @@ class GoRouterRefreshStream extends ChangeNotifier {
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // 🔥 État d’auth Firebase
   final authAsync = ref.watch(authStateChangesProvider);
-  final authStream =
-      ref.read(authRepositoryProvider).authStateChanges;
-
+  final authStream = ref.read(authRepositoryProvider).authStateChanges;
   final refreshListenable = GoRouterRefreshStream(authStream);
   ref.onDispose(refreshListenable.dispose);
 
@@ -54,300 +53,131 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refreshListenable,
 
     redirect: (context, state) {
-      // ⏳ Firebase pas encore prêt
-      if (authAsync.isLoading) {
-        return null; // Laisser l'écran actuel s'afficher
-      }
+      if (authAsync.isLoading) return null;
 
       final isLoggedIn = authAsync.value != null;
       final location = state.matchedLocation;
+      final isAuthPage = location == '/login' || location == '/register' || location == '/forgotpassword';
 
-      final isAuthPage = location == '/login' ||
-          location == '/register' ||
-          location == '/forgot-password';
+      if (!isLoggedIn && !isAuthPage) return '/home';
+      if (isLoggedIn && (location == '/' || location == '/home' || isAuthPage)) return '/dashboard';
 
-      // 🔒 Pas connecté → rediriger vers la page d'accueil
-      if (!isLoggedIn && !isAuthPage) {
-        return '/home';
-      }
-
-      // ✅ Connecté → rediriger vers le dashboard
-      if (isLoggedIn && (location == '/' || location == '/home' || isAuthPage)) {
-        return '/dashboard';
-      }
-
-      return null; // Aucune redirection nécessaire
+      return null;
     },
 
     routes: [
-      // 🏠 Page d'accueil (splash/landing)
-      GoRoute(
-        path: '/',
-        redirect: (context, state) => '/home',
-      ),
+      // 🏠 Pages d'accueil et splash
+      GoRoute(path: '/', redirect: (context, state) => '/home'),
+      GoRoute(path: '/home', name: 'home', builder: (context, state) => const HomeScreen()),
+      GoRoute(path: '/dashboard', name: 'dashboard', builder: (context, state) => const DashboardScreen()),
 
-      // 🔐 Pages d'authentification
-      GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/register',
-        name: 'register',
-        builder: (context, state) => const RegisterScreen(),
-      ),
-      GoRoute(
-        path: '/forgotpassword',
-        name: 'forgotpassword',
-        builder: (context, state) => const ForgotPasswordScreen(),
-      ),
+      // 🔐 Auth
+      GoRoute(path: '/login', name: 'login', builder: (context, state) => const LoginScreen()),
+      GoRoute(path: '/register', name: 'register', builder: (context, state) => const RegisterScreen()),
+      GoRoute(path: '/forgotpassword', name: 'forgotpassword', builder: (context, state) => const ForgotPasswordScreen()),
 
-      // 🏠 Pages principales
-      GoRoute(
-        path: '/home',
-        name: 'home',
-        builder: (context, state) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: '/dashboard',
-        name: 'dashboard',
-        builder: (context, state) => const DashboardScreen(),
-      ),
-
-      // 👥 Gestion des clients
-      GoRoute(
-        path: '/clientScreen',
-        name: 'clientScreen',
-        builder: (context, state) => const ClientsScreen(),
-      ),
-      GoRoute(
-        path: '/addclient',
-        name: 'addclient',
-        builder: (context, state) => const AddClientScreen(),
-      ),
+      // 👥 Clients
+      GoRoute(path: '/clientScreen', name: 'clientScreen', builder: (context, state) => const ClientsScreen()),
+      GoRoute(path: '/addclient', name: 'addclient', builder: (context, state) => const AddClientScreen()),
       GoRoute(
         path: '/infosclients',
         name: 'infosclients',
         builder: (context, state) {
-          try {
-            final client = state.extra as Client?;
-            if (client == null) {
-              // Retour à la liste des clients avec message
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Client non spécifié'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              });
-              return const ClientsScreen();
-            }
-            return InfosClientScreen(client: client);
-          } catch (e) {
-            // En cas d'erreur de cast
-            return Scaffold(
-              appBar: AppBar(title: const Text('Erreur')),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error, size: 64, color: Colors.red),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Erreur de chargement',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: () => context.go('/clientScreen'),
-                      child: const Text('Retour à la liste'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+          final client = state.extra as Client?;
+          if (client == null) return const ClientsScreen();
+          return InfosClientScreen(client: client);
         },
       ),
       GoRoute(
         path: '/editclient',
         name: 'editclient',
         builder: (context, state) {
-          try {
-            final client = state.extra as Client?;
-            if (client == null) {
-              return Scaffold(
-                appBar: AppBar(
-                  title: const Text('Erreur'),
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => context.go('/clientScreen'),
-                  ),
-                ),
-                body: const Center(
-                  child: Text('Client non spécifié pour édition'),
-                ),
-              );
-            }
-            return EditClientScreen(client: client);
-          } catch (e) {
-            return Scaffold(
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 50),
-                    const SizedBox(height: 20),
-                    const Text('Données client invalides'),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () => context.go('/clientScreen'),
-                      child: const Text('Retour aux clients'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+          final client = state.extra as Client?;
+          if (client == null) return const ClientsScreen();
+          return EditClientScreen(client: client);
         },
       ),
 
-      // 💰 Gestion des paiements
+      // 📋 Dettes
+      GoRoute(path: '/debts', name: 'debts', builder: (context, state) => const DebtsScreen()),
       GoRoute(
-        path: '/payment/:debtId',
-        name: 'payment',
-        builder: (context, state) {
-          final debtId = int.parse(state.pathParameters['debtId']!);
-          return PaymentsScreen(debtId: debtId);
-        },
-      ),
-
-      GoRoute(
-        path: '/ajoutpayement',
-        name: 'ajoutpayement',
-        builder: (context, state) {
-          try {
-            final client = state.extra as Client?;
-            return AddPaymentScreen(client: client);
-          } catch (e) {
-            // Si erreur de cast, créer un nouvel écran sans client
-            return const AddPaymentScreen(client: null);
-          }
-        },
-      ),
-
-      // 📋 Gestion des dettes
-      GoRoute(
-        path: '/debts',
-        name: 'debts',
-        builder: (context, state) => const DebtsScreen(),
-      ),
-      GoRoute(
-        path: '/debt-details',
+        path: '/debtdetails/:id',
         name: 'details',
         builder: (context, state) {
-          try {
-            final debt = state.extra as Debt;
-            return DebtDetailsScreen(debt: debt);
-          } catch (e) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text('Erreur'),
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => context.go('/debts'),
-                ),
-              ),
-              body: const Center(
-                child: Text('Dette non trouvée'),
-              ),
-            );
+          final idStr = state.pathParameters['id'];
+          final debtId = int.tryParse(idStr ?? '');
+
+          if (debtId == null) {
+            return const DebtsScreen();
           }
+
+          return DebtDetailsScreen(debtId: debtId);
         },
       ),
+
       GoRoute(
         path: '/editdebt',
         name: 'editdebt',
         builder: (context, state) {
-          try {
-            final debt = state.extra as Debt;
-            return EditDebtScreen(debt: debt);
-          } catch (e) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text('Erreur'),
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => context.go('/debts'),
-                ),
-              ),
-              body: const Center(
-                child: Text('Impossible de modifier cette dette'),
-              ),
-            );
-          }
+          final debt = state.extra as Debt?;
+          if (debt == null) return const DebtsScreen();
+          return EditDebtScreen(debt: debt);
         },
       ),
+      GoRoute(path: '/ajoutdebt', name: 'ajoutdebt', builder: (context, state) => const AddDebtScreen()),
+
+      // 💰 Paiements
+      // 💰 Paiements
+
       GoRoute(
-        path: '/ajoutdebt',
-        name: 'ajoutdebt',
-        builder: (context, state) => const AddDebtScreen(),
+        path: '/payments',
+        name: 'payments',
+        builder: (context, state) => const PaymentsScreen()),
+
+      GoRoute(
+        path: '/addpayment/:id',
+        name: 'addPayment',
+        builder: (context, state) {
+          final idStr = state.pathParameters['id'];
+          final debtId = int.tryParse(idStr ?? '');
+
+          if (debtId == null) {
+            return const DebtsScreen();
+          }
+
+          return AddPaymentScreen(debtId: debtId);
+        },
       ),
 
     ],
 
-    // 🚨 Gestionnaire d'erreurs global
-    errorBuilder: (context, state) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Erreur'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/dashboard'),
-          ),
+    errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(
+        title: const Text('Erreur'),
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go('/dashboard')),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.warning_amber, size: 80, color: Colors.orange),
+            const SizedBox(height: 20),
+            Text('Erreur 404', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 10),
+            Text('Page non trouvée: ${state.uri.path}', style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 30),
+            Wrap(
+              spacing: 12,
+              children: [
+                ElevatedButton(onPressed: () => context.go('/dashboard'), child: const Text('Tableau de bord')),
+                OutlinedButton(onPressed: () => context.go('/clientScreen'), child: const Text('Clients')),
+              ],
+            ),
+          ],
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.warning_amber, size: 80, color: Colors.orange),
-              const SizedBox(height: 20),
-              Text(
-                'Erreur 404',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Page non trouvée: ${state.uri.path}',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 30),
-              Wrap(
-                spacing: 12,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => context.go('/dashboard'),
-                    child: const Text('Tableau de bord'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => context.go('/clientScreen'),
-                    child: const Text('Clients'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => context.go('/payment'),
-                    child: const Text('Paiements'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    },
+      ),
+    ),
 
-    // 📝 Debug logging
     debugLogDiagnostics: true,
   );
 });

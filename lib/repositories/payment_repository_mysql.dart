@@ -11,7 +11,7 @@ class PaymentRepositoryMySql implements PaymentRepository {
   PaymentRepositoryMySql({http.Client? client})
       : _client = client ?? http.Client();
 
-  /// ================= LIST =================
+  /// ================= LIST by debt =================
   @override
   Future<List<Payment>> getPaymentsByDebt(int debtId) async {
     final uri = Uri.parse(ApiConfig.listPaymentUrl(debtId));
@@ -22,8 +22,32 @@ class PaymentRepositoryMySql implements PaymentRepository {
     );
 
     if (response.statusCode != 200) {
-      throw Exception(
-          'Erreur chargement paiements: ${response.statusCode}');
+      throw Exception('Erreur chargement paiements: ${response.statusCode}');
+    }
+
+    final body = jsonDecode(response.body);
+
+    if (body['ok'] != true) {
+      throw Exception(body['message'] ?? 'Erreur serveur');
+    }
+
+    final List<dynamic> data = body['data'] ?? [];
+
+    return data.map((json) => Payment.fromJson(json)).toList();
+  }
+
+  /// ================= LIST ALL =================
+  @override
+  Future<List<Payment>> getAllPayments() async {
+    final uri = Uri.parse(ApiConfig.listAllPaymentsUrl()); // 🔹 à créer dans ApiConfig
+
+    final response = await _client.get(
+      uri,
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Erreur chargement tous les paiements: ${response.statusCode}');
     }
 
     final body = jsonDecode(response.body);
@@ -47,9 +71,6 @@ class PaymentRepositoryMySql implements PaymentRepository {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(payment.toJson()),
     );
-
-    print("CREATE STATUS: ${response.statusCode}");
-    print("CREATE BODY: ${response.body}");
 
     if (response.statusCode != 200) {
       throw Exception(response.body);
@@ -75,9 +96,6 @@ class PaymentRepositoryMySql implements PaymentRepository {
       body: jsonEncode(payment.toJson()),
     );
 
-    print("UPDATE STATUS: ${response.statusCode}");
-    print("UPDATE BODY: ${response.body}");
-
     if (response.statusCode != 200) {
       throw Exception(response.body);
     }
@@ -97,9 +115,6 @@ class PaymentRepositoryMySql implements PaymentRepository {
     final uri = Uri.parse(ApiConfig.deletePaymentUrl(id));
 
     final response = await _client.delete(uri);
-
-    print("DELETE STATUS: ${response.statusCode}");
-    print("DELETE BODY: ${response.body}");
 
     if (response.statusCode != 200) {
       throw Exception(response.body);

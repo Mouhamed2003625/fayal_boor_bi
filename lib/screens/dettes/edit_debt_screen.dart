@@ -29,13 +29,11 @@ class _EditDebtScreenState extends ConsumerState<EditDebtScreen> {
   void initState() {
     super.initState();
 
-    // Initialiser les contrôleurs avec les valeurs existantes
     _productCtrl = TextEditingController(text: widget.debt.product);
     _quantityCtrl =
         TextEditingController(text: widget.debt.quantity.toString());
     _amountCtrl = TextEditingController(text: widget.debt.amount.toString());
 
-    // S'assurer que dueDate n'est pas null
     _selectedDueDate = widget.debt.dueDate ?? DateTime.now();
   }
 
@@ -66,7 +64,6 @@ class _EditDebtScreenState extends ConsumerState<EditDebtScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Créer l'objet Debt à envoyer au provider
       final updatedDebt = Debt(
         id: widget.debt.id,
         clientId: widget.debt.clientId,
@@ -82,7 +79,6 @@ class _EditDebtScreenState extends ConsumerState<EditDebtScreen> {
 
       if (!mounted) return;
 
-      // Retour à la liste des dettes
       context.go('/debts');
     } catch (e) {
       ScaffoldMessenger.of(context)
@@ -92,95 +88,144 @@ class _EditDebtScreenState extends ConsumerState<EditDebtScreen> {
     }
   }
 
+  /// Fonction pour gérer le retour à la page précédente
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/debts');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Modifier la dette'),
+        backgroundColor: const Color(0xFF003366),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: _goBack,
+          tooltip: 'Retour',
+        ),
+        title: const Text(
+          'Modifier la dette',
+          style: TextStyle(color: Colors.white),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _submit,
+            icon: const Icon(Icons.save, color: Colors.white),
+            onPressed: _isLoading ? null : _submit,
+            tooltip: 'Enregistrer',
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // Produit
-              TextFormField(
-                controller: _productCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Produit',
-                  border: OutlineInputBorder(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, const Color(0xFF003366).withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                TextFormField(
+                  controller: _productCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Produit',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF003366), width: 2),
+                    ),
+                  ),
+                  validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Produit requis' : null,
                 ),
-                validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Produit requis' : null,
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Quantité
-              TextFormField(
-                controller: _quantityCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Quantité',
-                  border: OutlineInputBorder(),
+                TextFormField(
+                  controller: _quantityCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Quantité',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF003366), width: 2),
+                    ),
+                  ),
+                  validator: (v) {
+                    final val = int.tryParse(v ?? '');
+                    if (val == null || val <= 0) return 'Quantité invalide';
+                    return null;
+                  },
                 ),
-                validator: (v) {
-                  final val = int.tryParse(v ?? '');
-                  if (val == null || val <= 0) return 'Quantité invalide';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Montant
-              TextFormField(
-                controller: _amountCtrl,
-                keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Montant',
-                  border: OutlineInputBorder(),
+                TextFormField(
+                  controller: _amountCtrl,
+                  keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Montant',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF003366), width: 2),
+                    ),
+                  ),
+                  validator: (v) {
+                    final val = double.tryParse(v ?? '');
+                    if (val == null || val <= 0) return 'Montant invalide';
+                    return null;
+                  },
                 ),
-                validator: (v) {
-                  final val = double.tryParse(v ?? '');
-                  if (val == null || val <= 0) return 'Montant invalide';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Date d'échéance
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text("Date d'échéance"),
-                subtitle: Text(
-                  "${_selectedDueDate.day.toString().padLeft(2, '0')}/"
-                      "${_selectedDueDate.month.toString().padLeft(2, '0')}/"
-                      "${_selectedDueDate.year}",
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text("Date d'échéance"),
+                  subtitle: Text(
+                    "${_selectedDueDate.day.toString().padLeft(2, '0')}/"
+                        "${_selectedDueDate.month.toString().padLeft(2, '0')}/"
+                        "${_selectedDueDate.year}",
+                  ),
+                  trailing: const Icon(Icons.calendar_today, color: Color(0xFF003366)),
+                  onTap: _pickDate,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
                 ),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: _pickDate,
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Bouton Enregistrer
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                onPressed: _submit,
-                child: const Text('Enregistrer'),
-              ),
-            ],
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF003366),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Enregistrer',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
