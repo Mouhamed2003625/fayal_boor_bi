@@ -94,6 +94,8 @@ class ApiConfig {
 
   static String updatePaymentUrl() => '$baseUrl/payments/update_payment.php';
 
+  static String listAllPaymentsUrl() => '$baseUrl/payments/all_payments.php';
+
 
 }
 

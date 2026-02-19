@@ -17,8 +17,16 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   @override
   void initState() {
     super.initState();
-    // Charger les clients au démarrage
     Future.microtask(() => ref.read(clientProvider.notifier).loadClients());
+  }
+
+  /// Fonction pour gérer le retour à la page précédente
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/dashboard');
+    }
   }
 
   @override
@@ -31,26 +39,27 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF003366),
         elevation: 1,
         leading: IconButton(
-          icon: const Icon(Icons.dashboard, color: Color(0xFF3B82F6)),
-          onPressed: () => context.go('/dashboard'),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: _goBack,
+          tooltip: 'Retour',
         ),
         title: const Text(
           "Liste des Clients",
           style: TextStyle(
-            color: Color(0xFF1E293B),
+            color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add, color: Color(0xFF3B82F6)),
+            icon: const Icon(Icons.add, color: Colors.white),
             onPressed: () => context.go('/addclient'),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF3B82F6)),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () => ref.read(clientProvider.notifier).loadClients(),
           ),
         ],
@@ -65,6 +74,8 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                filled: true,
+                fillColor: Colors.white,
               ),
               onChanged: (value) => setState(() {
                 _searchQuery = value;
@@ -73,20 +84,29 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           ),
         ),
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.error != null
-          ? _buildErrorState(state.error!)
-          : clients.isEmpty
-          ? _buildEmptyState()
-          : RefreshIndicator(
-        onRefresh: () async =>
-            ref.read(clientProvider.notifier).loadClients(),
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: clients.length,
-          itemBuilder: (context, index) =>
-              _buildClientCard(clients[index]),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, const Color(0xFF003366).withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: state.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : state.error != null
+            ? _buildErrorState(state.error!)
+            : clients.isEmpty
+            ? _buildEmptyState()
+            : RefreshIndicator(
+          onRefresh: () async =>
+              ref.read(clientProvider.notifier).loadClients(),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: clients.length,
+            itemBuilder: (context, index) =>
+                _buildClientCard(clients[index]),
+          ),
         ),
       ),
     );
@@ -105,7 +125,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
     } else if (balance > 0) {
       avatarColor = const Color(0xFFDC2626);
     } else {
-      avatarColor = const Color(0xFF3B82F6);
+      avatarColor = const Color(0xFF003366);
     }
 
     return Card(
@@ -139,11 +159,11 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                       ? Colors.red
                       : balance == 0
                       ? Colors.green
-                      : Colors.blue),
+                      : const Color(0xFF003366)),
             ),
           ],
         ),
-        trailing: const Icon(Icons.chevron_right, color: Color(0xFF3B82F6)),
+        trailing: const Icon(Icons.chevron_right, color: Color(0xFF003366)),
         onTap: () => context.goNamed('infosclients', extra: client),
       ),
     );
@@ -163,7 +183,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           icon: const Icon(Icons.add),
           label: const Text("Ajouter un client"),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF3B82F6),
+            backgroundColor: const Color(0xFF003366),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)),
@@ -194,7 +214,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           icon: const Icon(Icons.refresh),
           label: const Text("Réessayer"),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF3B82F6),
+            backgroundColor: const Color(0xFF003366),
             foregroundColor: Colors.white,
           ),
         ),

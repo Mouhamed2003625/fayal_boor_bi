@@ -54,7 +54,7 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Client enregistré avec succès'),
+            content: Text('✅ Client enregistré avec succès'),
             backgroundColor: Color(0xFF16A34A),
             duration: Duration(seconds: 2),
           ),
@@ -70,119 +70,149 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
     }
   }
 
+  /// Fonction pour gérer le retour à la page précédente
+  void _goBack() {
+    if (context.canPop()) {
+      // Si on peut faire un pop (navigation précédente dans l'historique)
+      context.pop();
+    } else {
+      // Sinon, on redirige vers la page des clients
+      context.go('/clientScreen');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF003366),
         elevation: 1,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E40AF)),
-          onPressed: () => context.go('/clientScreen'),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: _goBack, // Utilisation de la fonction de retour
+          tooltip: 'Retour',
         ),
         title: const Text(
           "Nouveau Client",
           style: TextStyle(
-            color: Color(0xFF1E293B),
+            color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
         ),
         actions: [
+          // Bouton d'aide ou d'information (optionnel)
           IconButton(
-            icon: const Icon(Icons.save, color: Color(0xFF3B82F6)),
-            onPressed: isSaving ? null : saveClient,
-            tooltip: 'Enregistrer',
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Remplissez tous les champs obligatoires"),
+                  backgroundColor: Colors.blue,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            tooltip: 'Aide',
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              if (errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline,
-                          color: Colors.red, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(errorMessage!,
-                            style: const TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  ),
-                ),
-              _buildFormField(
-                label: "Nom complet du client",
-                controller: nameController,
-                icon: Icons.person_outline,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "Nom du client requis";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildFormField(
-                label: "Numéro de téléphone",
-                controller: phoneController,
-                icon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "Numéro de téléphone requis";
-                  }
-                  if (!RegExp(r'^[0-9]{9,}$').hasMatch(value.trim())) {
-                    return "Numéro invalide (minimum 9 chiffres)";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildFormField(
-                label: "Adresse du client (optionnel)",
-                controller: addressController,
-                icon: Icons.location_on_outlined,
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: isSaving ? null : saveClient,
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B82F6),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 18)),
-                  child: isSaving
-                      ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      color: Colors.white,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, const Color(0xFF003366).withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                if (errorMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.shade200),
                     ),
-                  )
-                      : const Text(
-                    "Enregistrer le client",
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline,
+                            color: Colors.red, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(errorMessage!,
+                              style: const TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  ),
+                _buildFormField(
+                  label: "Nom complet du client",
+                  controller: nameController,
+                  icon: Icons.person_outline,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Nom du client requis";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                _buildFormField(
+                  label: "Numéro de téléphone",
+                  controller: phoneController,
+                  icon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Numéro de téléphone requis";
+                    }
+                    if (!RegExp(r'^[0-9]{9,}$').hasMatch(value.trim())) {
+                      return "Numéro invalide (minimum 9 chiffres)";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                _buildFormField(
+                  label: "Adresse du client (optionnel)",
+                  controller: addressController,
+                  icon: Icons.location_on_outlined,
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isSaving ? null : saveClient,
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF003366),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 18)),
+                    child: isSaving
+                        ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: Colors.white,
+                      ),
+                    )
+                        : const Text(
+                      "Enregistrer le client",
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

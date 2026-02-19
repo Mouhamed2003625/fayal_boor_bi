@@ -13,6 +13,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
 
+  // Constante pour la couleur bleue principale
+  static const Color primaryBlue = Color(0xFF003366);
+
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -53,7 +56,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (user != null) {
       // Si connecté, rediriger vers l'écran principal (ex: dashboard)
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go('/dashboard'); // ou '/home' selon ta route
+        context.go('/dashboard');
       });
     }
 
@@ -61,15 +64,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.white,           // Blanc en haut
-              Color(0xFFF0F9FF),     // Bleu très clair
-              Color(0xFFE0F2FE),     // Bleu clair
-              Color(0xFFBAE6FD),     // Bleu ciel doux
+              Colors.white,                    // Blanc en haut
+              primaryBlue.withOpacity(0.05),   // Bleu très clair (0xFF003366 avec opacité 0.05)
+              primaryBlue.withOpacity(0.08),   // Bleu clair
+              primaryBlue.withOpacity(0.1),     // Bleu ciel doux
             ],
             stops: [0.0, 0.3, 0.7, 1.0],
           ),
@@ -83,7 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // LOGO - Mise à jour avec une icône plus adaptée
+                  // LOGO - Mise à jour avec la couleur primaire
                   Container(
                     width: 130,
                     height: 130,
@@ -92,25 +95,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.shade100,
+                          color: primaryBlue.withOpacity(0.3),
                           blurRadius: 15,
                           spreadRadius: 3,
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.price_change_sharp,
-                      color: Color(0xFF2563EB),
+                      color: primaryBlue,
                       size: 70,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     "Kaay fay",
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E40AF), // Bleu foncé
+                      color: primaryBlue, // Bleu foncé
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -125,7 +128,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                   const SizedBox(height: 45),
 
-                  // 🔐 SE CONNECTER - Bouton bleu
+                  // 🔐 SE CONNECTER - Bouton avec la couleur primaire
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -133,14 +136,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         context.go('/login');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB), // Bleu Jobsly
+                        backgroundColor: primaryBlue,
                         foregroundColor: Colors.white,
                         minimumSize: const Size.fromHeight(55),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 3,
-                        shadowColor: Colors.blue.shade200,
+                        shadowColor: primaryBlue.withOpacity(0.3),
                       ),
                       child: const Text(
                         "Se connecter",
@@ -150,7 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                   const SizedBox(height: 15),
 
-                  // 📝 CRÉER UN COMPTE - Bouton outlined bleu
+                  // 📝 CRÉER UN COMPTE - Bouton outlined avec la couleur primaire
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -159,16 +162,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       },
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(55),
-                        side: const BorderSide(color: Color(0xFF2563EB), width: 2),
-                        foregroundColor: const Color(0xFF2563EB),
+                        side: BorderSide(color: primaryBlue, width: 2),
+                        foregroundColor: primaryBlue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         backgroundColor: Colors.white.withOpacity(0.8),
                       ),
-                      child: const Text(
+                      child: Text(
                         "Créer un compte",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: primaryBlue),
                       ),
                     ),
                   ),

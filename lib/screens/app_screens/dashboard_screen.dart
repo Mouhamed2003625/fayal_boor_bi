@@ -17,6 +17,9 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  // Constante pour la couleur bleue
+  static const Color primaryBlue = Color(0xFF003366);
+
   @override
   void initState() {
     super.initState();
@@ -53,166 +56,175 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ..sort((a, b) => b.amount.compareTo(a.amount));
 
     return Scaffold(
-      backgroundColor: Colors.white70,
+      backgroundColor: Colors.transparent, // Changé pour laisser voir le gradient
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: primaryBlue,
         elevation: 1,
         title: const Text(
-          "Dashboard",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
+          "Tableau de bord",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20), // Texte en blanc
         ),
-        actions: [
-          IconButton(icon: const Icon(Icons.search, color: Colors.black54), onPressed: () {}),
-        ],
+        iconTheme: const IconThemeData(color: Colors.white), // Icônes en blanc
       ),
       drawer: _buildDrawer(context, ref),
-      body: RefreshIndicator(
-        onRefresh: () async => await ref.read(debtProvider.notifier).loadDebts(),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // KPI Cards
-              Row(
-                children: [
-                  Expanded(
-                    child: _KPICard(
-                      title: "Dettes Actives",
-                      value: "$pendingCount",
-                      change: totalDebts > 0
-                          ? "${((pendingCount / totalDebts) * 100).toStringAsFixed(1)}%"
-                          : "0%",
-                      isPositive: false,
-                      icon: Icons.account_balance_wallet,
-                      color: const Color(0xFF3B82F6),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _KPICard(
-                      title: "Total Créances",
-                      value: "${totalDue.toStringAsFixed(0)} FCFA",
-                      change: "▲",
-                      isPositive: true,
-                      icon: Icons.attach_money,
-                      color: const Color(0xFF10B981),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _KPICard(
-                      title: "Taux Recouvrement",
-                      value: "${recoveryRate.toStringAsFixed(1)}%",
-                      change: "▲",
-                      isPositive: true,
-                      icon: Icons.trending_up,
-                      color: const Color(0xFF8B5CF6),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _KPICard(
-                      title: "Échéances Imminentes",
-                      value: "$dueThisWeek",
-                      change: "Cette semaine",
-                      isPositive: false,
-                      icon: Icons.calendar_today,
-                      color: const Color(0xFFEF4444),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Graphiques
-              Row(
-                children: [
-                  Expanded(flex: 2, child: _buildOverviewChart(totalDue, totalPaid)),
-                  const SizedBox(width: 12),
-                  Expanded(flex: 1, child: _buildStatusChart(pendingCount, paidCount, overdueDebts)),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Top Débiteurs
-              const Text(
-                "Top Débiteurs",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const _DebtorListHeader(),
-                    const SizedBox(height: 8),
-                    ...topDebtors.take(3).map((debt) => _DebtorListItem(debt: debt)),
-                    if (topDebtors.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text("Aucune dette active", style: TextStyle(color: Colors.grey)),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Alertes & Actions
-              Row(
-                children: [
-                  Expanded(child: _buildAlertsCard(debts)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildQuickActions(context)),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Toutes les dettes
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Toutes les Dettes",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  TextButton(
-                    onPressed: () => context.go('/clientScreen'),
-                    child: const Text("Voir tout", style: TextStyle(color: Color(0xFF3B82F6))),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (debts.isNotEmpty)
-                ...debts.take(5).map(
-                      (debt) => DebtCard(
-                    debt: debt,
-                    onTap: () => context.goNamed('debt-details', extra: debt),
-                  ),
-                ),
-              if (debts.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text("Aucune dette enregistrée", style: TextStyle(color: Colors.grey)),
-                ),
-            ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, primaryBlue.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF3B82F6),
-        onPressed: () => context.go('/addClient'),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: RefreshIndicator(
+          onRefresh: () async => await ref.read(debtProvider.notifier).loadDebts(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // KPI Cards
+                Row(
+                  children: [
+                    Expanded(
+                      child: _KPICard(
+                        title: "Dettes Actives",
+                        value: "$pendingCount",
+                        change: totalDebts > 0
+                            ? "${((pendingCount / totalDebts) * 100).toStringAsFixed(1)}%"
+                            : "0%",
+                        isPositive: false,
+                        icon: Icons.account_balance_wallet,
+                        color: primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _KPICard(
+                        title: "Total Créances",
+                        value: "${totalDue.toStringAsFixed(0)} FCFA",
+                        change: "▲",
+                        isPositive: true,
+                        icon: Icons.attach_money,
+                        color: const Color(0xFF10B981),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _KPICard(
+                        title: "Taux Recouvrement",
+                        value: "${recoveryRate.toStringAsFixed(1)}%",
+                        change: "▲",
+                        isPositive: true,
+                        icon: Icons.trending_up,
+                        color: const Color(0xFF8B5CF6),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _KPICard(
+                        title: "Échéances Imminentes",
+                        value: "$dueThisWeek",
+                        change: "Cette semaine",
+                        isPositive: false,
+                        icon: Icons.calendar_today,
+                        color: const Color(0xFFEF4444),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Graphiques
+                Row(
+                  children: [
+                    Expanded(flex: 2, child: _buildOverviewChart(totalDue, totalPaid)),
+                    const SizedBox(width: 12),
+                    Expanded(flex: 1, child: _buildStatusChart(pendingCount, paidCount, overdueDebts)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Top Débiteurs
+                const Text(
+                  "Top Débiteurs",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const _DebtorListHeader(),
+                      const SizedBox(height: 8),
+                      ...topDebtors.take(3).map((debt) => _DebtorListItem(debt: debt)),
+                      if (topDebtors.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text("Aucune dette active", style: TextStyle(color: Colors.grey)),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Alertes & Actions
+                Row(
+                  children: [
+                    Expanded(child: _buildAlertsCard(debts)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildQuickActions(context)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Toutes les dettes
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Toutes les Dettes",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/clientScreen'),
+                      child: Text("Voir tout", style: TextStyle(color: primaryBlue)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (debts.isNotEmpty)
+                  ...debts.take(5).map(
+                        (debt) => DebtCard(
+                      debt: debt,
+                          onTap: () {
+                            context.goNamed(
+                              'details',
+                              pathParameters: {
+                                'id': debt.id.toString(),
+                              },
+                            );
+                          },
+                    ),
+                  ),
+                if (debts.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text("Aucune dette enregistrée", style: TextStyle(color: Colors.grey)),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -220,54 +232,68 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // ------------------- Drawer -------------------
   Widget _buildDrawer(BuildContext context, WidgetRef ref) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)]),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: const Icon(Icons.storefront, color: Color(0xFF3B82F6), size: 32),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, primaryBlue.withOpacity(0.02)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryBlue, const Color(0xFF001F3F)],
                 ),
-
-                const SizedBox(height: 12),
-                const Text("Boutique du peuple", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                const Text("Compte commerçant", style: TextStyle(color: Colors.white70, fontSize: 12)),
-              ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: Icon(Icons.storefront, color: primaryBlue, size: 32),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text("Boutique du peuple", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text("Compte commerçant", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
             ),
-          ),
-          _DrawerItem(icon: Icons.dashboard, title: "Dashboard", isActive: true, onTap: () => context.go('/dashboard')),
-          _DrawerItem(icon: Icons.people, title: "Clients", onTap: () => context.go('/clientScreen')),
-          _DrawerItem(icon: Icons.account_balance_wallet, title: "Dettes", onTap: () => context.go('/debts')),
-          _DrawerItem(icon: Icons.money, title: "Payments", onTap: () => context.goNamed('ajoutpayement')),
-
-          const Divider(),
-          _DrawerItem(
-            icon: Icons.logout,
-            title: "Se déconnecter",
-            color: Colors.red,
-            onTap: () async {
-              try {
-                final authRepo = ref.read(authRepositoryProvider);
-                await authRepo.signOut();
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Erreur lors de la déconnexion : $e")),
-                );
-              }
-            },
-          ),
-        ],
+            _DrawerItem(icon: Icons.dashboard, title: "Dashboard", isActive: true, onTap: () => context.go('/dashboard'), activeColor: primaryBlue),
+            _DrawerItem(icon: Icons.people, title: "Clients", onTap: () => context.go('/clientScreen'), activeColor: primaryBlue),
+            _DrawerItem(icon: Icons.account_balance_wallet, title: "Dettes", onTap: () => context.go('/debts'), activeColor: primaryBlue),
+            _DrawerItem(
+              icon: Icons.money,
+              title: "Payments",
+              onTap: () => context.go('/payments'),
+              activeColor: primaryBlue,
+            ),
+            const Divider(),
+            _DrawerItem(
+              icon: Icons.logout,
+              title: "Se déconnecter",
+              color: Colors.red,
+              onTap: () async {
+                try {
+                  final authRepo = ref.read(authRepositoryProvider);
+                  await authRepo.signOut();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Erreur lors de la déconnexion : $e")),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -343,7 +369,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 8),
           _alertRow("Cette semaine", dueThisWeek, Colors.orange),
           const SizedBox(height: 8),
-          _alertRow("Actives", active, Colors.blue),
+          _alertRow("Actives", active, primaryBlue),
         ],
       ),
     );
@@ -368,7 +394,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-
   Widget _buildQuickActions(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -389,8 +414,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           _quickButton(
             icon: Icons.person_add,
             label: "Nouveau client",
-            color: const Color(0xFF3B82F6),
-            onTap: () => context.go('/addClient'),
+            color: primaryBlue,
+            onTap: () => context.go('addclient'),
           ),
           const SizedBox(height: 12),
           _quickButton(
@@ -400,7 +425,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onTap: () => context.go('/debts'),
           ),
           const SizedBox(height: 12),
-
         ],
       ),
     );
@@ -439,6 +463,7 @@ class _DrawerItem extends StatelessWidget {
   final VoidCallback onTap;
   final bool isActive;
   final Color? color;
+  final Color? activeColor;
 
   const _DrawerItem({
     required this.icon,
@@ -446,11 +471,12 @@ class _DrawerItem extends StatelessWidget {
     required this.onTap,
     this.isActive = false,
     this.color,
+    this.activeColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final itemColor = color ?? (isActive ? const Color(0xFF3B82F6) : Colors.black87);
+    final itemColor = color ?? (isActive ? (activeColor ?? const Color(0xFF003366)) : Colors.black87);
 
     return ListTile(
       leading: Icon(icon, color: itemColor),
@@ -465,7 +491,6 @@ class _DrawerItem extends StatelessWidget {
     );
   }
 }
-
 
 // ------------------- Graphiques -------------------
 Widget _buildOverviewChart(double totalDue, double totalPaid) {
@@ -575,9 +600,6 @@ class _StatusItem extends StatelessWidget {
     );
   }
 }
-
-// ------------------- Alerts & Quick Actions -------------------
-// ... (idem à ton code, avec routes corrigées) ...
 
 // ------------------- Debtor List -------------------
 class _DebtorListHeader extends StatelessWidget {

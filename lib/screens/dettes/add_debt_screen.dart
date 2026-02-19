@@ -13,6 +13,8 @@ class AddDebtScreen extends ConsumerStatefulWidget {
 }
 
 class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
+  static const Color primaryBlue = Color(0xFF003366);
+
   final _formKey = GlobalKey<FormState>();
 
   final _productCtrl = TextEditingController();
@@ -30,6 +32,16 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
     _quantityCtrl.dispose();
     _amountCtrl.dispose();
     super.dispose();
+  }
+
+  /// Fonction pour gérer le retour à la page précédente
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      // Si on ne peut pas revenir en arrière, rediriger vers la page des dettes
+      context.go('/debts');
+    }
   }
 
   Future<void> _pickDate() async {
@@ -56,21 +68,32 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
         product: _productCtrl.text.trim(),
         quantity: int.parse(_quantityCtrl.text.trim()),
         amount: double.parse(_amountCtrl.text.trim()),
-        dueDate: _selectedDueDate, // DateTime ici
+        dueDate: _selectedDueDate,
       );
 
       if (!mounted) return;
+
+      // Message de succès
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Dette ajoutée avec succès'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
       context.go('/debts');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $e')),
+        SnackBar(
+          content: Text('❌ Erreur : $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -78,101 +101,170 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ajouter une dette'),
+        backgroundColor: primaryBlue,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          color: const Color(0xFF3B82F6),
-          onPressed: () {
-            if (_selectedClient != null) {
-              context.goNamed("infosclients", extra: _selectedClient);
-            } else {
-              context.go('/clientScreen');
-            }
-          },
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: _goBack,
+          tooltip: 'Retour',
         ),
+        title: const Text(
+          'Ajouter une dette',
+          style: TextStyle(color: Colors.white),
+        ),
+        actions: [
+          // Bouton d'aide optionnel
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Remplissez tous les champs pour ajouter une dette"),
+                  backgroundColor: Colors.blue,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            },
+            tooltip: 'Aide',
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: clientState.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              DropdownButtonFormField<Client>(
-                value: _selectedClient,
-                decoration: const InputDecoration(
-                  labelText: 'Client',
-                  border: OutlineInputBorder(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, primaryBlue.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: clientState.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                // Sélection du client
+                DropdownButtonFormField<Client>(
+                  value: _selectedClient,
+                  decoration: InputDecoration(
+                    labelText: 'Client',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: primaryBlue, width: 2),
+                    ),
+                  ),
+                  items: clientState.clients
+                      .map((c) => DropdownMenuItem(
+                    value: c,
+                    child: Text(c.name),
+                  ))
+                      .toList(),
+                  onChanged: (c) => setState(() => _selectedClient = c),
+                  validator: (v) =>
+                  v == null ? 'Veuillez sélectionner un client' : null,
                 ),
-                items: clientState.clients
-                    .map((c) => DropdownMenuItem(
-                  value: c,
-                  child: Text(c.name),
-                ))
-                    .toList(),
-                onChanged: (c) => setState(() => _selectedClient = c),
-                validator: (v) =>
-                v == null ? 'Veuillez sélectionner un client' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _productCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Produit',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+
+                // Produit
+                TextFormField(
+                  controller: _productCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Produit',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: primaryBlue, width: 2),
+                    ),
+                  ),
+                  validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Produit requis' : null,
                 ),
-                validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Produit requis' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _quantityCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Quantité',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+
+                // Quantité
+                TextFormField(
+                  controller: _quantityCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Quantité',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: primaryBlue, width: 2),
+                    ),
+                  ),
+                  validator: (v) {
+                    final val = int.tryParse(v ?? '');
+                    if (val == null || val <= 0) return 'Quantité invalide';
+                    return null;
+                  },
                 ),
-                validator: (v) {
-                  final val = int.tryParse(v ?? '');
-                  if (val == null || val <= 0) return 'Quantité invalide';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _amountCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Montant',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+
+                // Montant
+                TextFormField(
+                  controller: _amountCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Montant',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: primaryBlue, width: 2),
+                    ),
+                  ),
+                  validator: (v) {
+                    final val = double.tryParse(v ?? '');
+                    if (val == null || val <= 0) return 'Montant invalide';
+                    return null;
+                  },
                 ),
-                validator: (v) {
-                  final val = double.tryParse(v ?? '');
-                  if (val == null || val <= 0) return 'Montant invalide';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text("Date d'échéance"),
-                subtitle: Text(
-                  "${_selectedDueDate.day.toString().padLeft(2, '0')}/"
-                      "${_selectedDueDate.month.toString().padLeft(2, '0')}/"
-                      "${_selectedDueDate.year}",
+                const SizedBox(height: 16),
+
+                // Date d'échéance
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text("Date d'échéance"),
+                  subtitle: Text(
+                    "${_selectedDueDate.day.toString().padLeft(2, '0')}/"
+                        "${_selectedDueDate.month.toString().padLeft(2, '0')}/"
+                        "${_selectedDueDate.year}",
+                  ),
+                  trailing: Icon(Icons.calendar_today, color: primaryBlue),
+                  onTap: _pickDate,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
                 ),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: _pickDate,
-              ),
-              const SizedBox(height: 24),
-              _isSubmitting
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                onPressed: _submit,
-                child: const Text('Enregistrer'),
-              ),
-            ],
+                const SizedBox(height: 24),
+
+                // Bouton d'enregistrement
+                _isSubmitting
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Enregistrer',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
